@@ -95,9 +95,10 @@ struct SelectEtablissementView: View {
 
             PrimaryGradientButton(title: "Appliquer", enabled: selectedEtablissement != nil) {
                 if let etab = selectedEtablissement {
-                    authVM.updateUserFields(["etablissement": etab.name])
-                    progress += 0.1
-                    goToNext = true
+                    authVM.updateLocationField(["etablissement": etab.name]) {
+                        progress += 0.1
+                        goToNext = true
+                    }
                 }
             }
             .padding(.horizontal)

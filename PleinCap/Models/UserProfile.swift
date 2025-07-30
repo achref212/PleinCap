@@ -25,6 +25,7 @@ struct UserProfile: Codable {
     let moyenneAnglais: Double?
 
     let telephone: String?
+    let etablissement: String?
     let adresse: String?
     let distance: String?
     let budget: String?
@@ -58,6 +59,7 @@ struct UserProfile: Codable {
         moyennePhysique: Double?,
         moyenneAnglais: Double?,
         telephone: String?,
+        etablissement: String?,
         adresse: String?,
         distance: String?,
         budget: String?,
@@ -87,6 +89,7 @@ struct UserProfile: Codable {
         self.moyennePhysique = moyennePhysique
         self.moyenneAnglais = moyenneAnglais
         self.telephone = telephone
+        self.etablissement = etablissement
         self.adresse = adresse
         self.distance = distance
         self.budget = budget
@@ -109,7 +112,7 @@ struct UserProfile: Codable {
         case moyenneSvt = "moyenne_svt"
         case moyennePhysique = "moyenne_physique"
         case moyenneAnglais = "moyenne_anglais"
-        case telephone, adresse, distance, budget
+        case telephone,etablissement ,adresse, distance, budget
         case academie
         case estBoursier = "est_boursier"
         case planAction = "plan_action"
@@ -142,6 +145,7 @@ struct UserProfile: Codable {
         self.moyenneAnglais = try container.decodeIfPresent(Double.self, forKey: .moyenneAnglais)
 
         self.telephone = try container.decodeIfPresent(String.self, forKey: .telephone)
+        self.etablissement = try container.decodeIfPresent(String.self, forKey: .etablissement)
         self.adresse = try container.decodeIfPresent(String.self, forKey: .adresse)
         self.distance = try container.decodeIfPresent(String.self, forKey: .distance)
         self.budget = try container.decodeIfPresent(String.self, forKey: .budget)
@@ -175,6 +179,7 @@ extension UserProfile {
         moyennePhysique: 16.0,
         moyenneAnglais: 15.5,
         telephone: "+33 6 12 34 56 78",
+        etablissement: "Lycée Jean Monnet",
         adresse: "12 rue des Lilas, Paris",
         distance: "20km",
         budget: "10000",

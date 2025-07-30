@@ -39,6 +39,7 @@ class AuthViewModel: ObservableObject {
 
     // 📍 Localisation & infos
     @Published var telephone: String? = nil
+    @Published var etablissement: String? = nil
     @Published var adresse: String? = nil
     @Published var distance: String? = nil
     @Published var budget: String? = nil
@@ -301,6 +302,62 @@ class AuthViewModel: ObservableObject {
                     }
                 case .failure(let err):
                     self.errorMessage = "Erreur mise à jour : \(err.localizedDescription)"
+                }
+            }
+        }
+    }
+    func submitMoyenne(completion: (() -> Void)? = nil) {
+        guard let token = accessToken else {
+            self.errorMessage = "Token manquant"
+            return
+        }
+
+        let moyenne = MoyenneData(
+            id: nil,
+            moyenneGenerale: moyenneGenerale,
+            moyenneFrancais: moyenneFrancais,
+            moyennePhilo: moyennePhilo,
+            moyenneMath: moyenneMath,
+            moyenneSvt: moyenneSvt,
+            moyennePhysique: moyennePhysique,
+            moyenneAnglais: moyenneAnglais
+        )
+
+        APIService.shared.updateUserMoyenne(moyenne, token: token) { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let user):
+                    self.userProfile = user
+                    completion?()
+                case .failure(let err):
+                    self.errorMessage = "Erreur moyenne : \(err.localizedDescription)"
+                }
+            }
+        }
+    }
+    func updateLocationField(_ fields: [String: Any], completion: (() -> Void)? = nil) {
+        guard let token = accessToken else {
+            self.errorMessage = "Token manquant"
+            return
+        }
+
+        APIService.shared.patchRequest(path: "/me/location", body: fields, token: token) { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let data):
+                    do {
+                        let updated = try JSONDecoder().decode(LocationData.self, from: data)
+                        // On met à jour les champs localement (si tu veux)
+                        self.adresse = updated.adresse
+                        self.distance = updated.distance?.description
+                        self.etablissement = updated.etablissement
+                        self.academie = updated.academie
+                        completion?()
+                    } catch {
+                        self.errorMessage = "Erreur de décodage localisation"
+                    }
+                case .failure(let error):
+                    self.errorMessage = "Erreur location : \(error.localizedDescription)"
                 }
             }
         }

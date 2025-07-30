@@ -152,9 +152,10 @@ struct SelectAcademieView: View {
                 // ✅ Bouton Appliquer
                 PrimaryGradientButton(title: "Appliquer", enabled: selectedAcademie != nil) {
                     if let acad = selectedAcademie {
-                        authVM.updateUserFields(["academie": acad.nom])
-                        progress += 0.1
-                        goToNext = true
+                        authVM.updateLocationField(["academie": acad.nom]) {
+                            progress += 0.1
+                            goToNext = true
+                        }
                     }
                 }
                 .padding(.horizontal)

@@ -192,6 +192,97 @@ class APIService {
             }
         }.resume()
     }
+    func getUserPlan(token: String, completion: @escaping (Result<PlanActionData, Error>) -> Void) {
+        getRequest(path: "/me/plan-action", token: token) { result in
+            switch result {
+            case .success(let data):
+                do {
+                    let decoded = try JSONDecoder().decode(PlanActionData.self, from: data)
+                    completion(.success(decoded))
+                } catch {
+                    completion(.failure(error))
+                }
+            case .failure(let error):
+                completion(.failure(error))
+            }
+        }
+    }
+    func updateUserLocation(_ locationData: LocationData, token: String, completion: @escaping (Result<UserProfile, Error>) -> Void) {
+        guard let url = URL(string: baseURL + "/me/location") else {
+            completion(.failure(APIError.invalidURL))
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        do {
+            let body = try JSONEncoder().encode(locationData)
+            request.httpBody = body
+        } catch {
+            completion(.failure(error))
+            return
+        }
+
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                completion(.failure(error))
+                return
+            }
+
+            guard let data = data else {
+                completion(.failure(APIError.noData))
+                return
+            }
+
+            do {
+                let decoded = try JSONDecoder().decode(UserProfile.self, from: data)
+                completion(.success(decoded))
+            } catch {
+                completion(.failure(error))
+            }
+        }.resume()
+    }
+    func updateUserMoyenne(_ moyenneData: MoyenneData, token: String, completion: @escaping (Result<UserProfile, Error>) -> Void) {
+        guard let url = URL(string: baseURL + "/me/moyenne") else {
+            completion(.failure(APIError.invalidURL))
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        do {
+            let body = try JSONEncoder().encode(moyenneData)
+            request.httpBody = body
+        } catch {
+            completion(.failure(error))
+            return
+        }
+
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                completion(.failure(error))
+                return
+            }
+
+            guard let data = data else {
+                completion(.failure(APIError.noData))
+                return
+            }
+
+            do {
+                let decoded = try JSONDecoder().decode(UserProfile.self, from: data)
+                completion(.success(decoded))
+            } catch {
+                completion(.failure(error))
+            }
+        }.resume()
+    }
 }
 
 enum APIError: Error {

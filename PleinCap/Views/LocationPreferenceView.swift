@@ -25,7 +25,6 @@ struct LocationItem: Identifiable, Equatable {
     }
 }
 
-
 struct LocationPreferenceView: View {
     @EnvironmentObject var authVM: AuthViewModel
     @State private var selectedFrance: Bool = false
@@ -34,6 +33,7 @@ struct LocationPreferenceView: View {
     @State private var showLocationPicker = false
     @State private var progress: Double
     @State private var goToGrades = false
+
     init(initialProgress: Double = 0.3) {
         _progress = State(initialValue: initialProgress)
     }
@@ -118,38 +118,34 @@ struct LocationPreferenceView: View {
 
             Spacer()
 
+            // ✅ Nouveau bouton "Suivant" avec updateLocationField
             PrimaryGradientButton(title: "Suivant") {
                 if selectedFrance {
                     print("✅ Partout en France sélectionné")
                     let fields: [String: Any] = [
-                        "addresses": ["Partout en France"],
-                        "distances": [0.0],
-                        "coordinates": [["lat": 0.0, "lng": 0.0]]
+                        "adresse": "Partout en France",
+                        "latitude": 0.0,
+                        "longitude": 0.0,
+                        "distance": 0.0
                     ]
-                    authVM.updateUserFields(fields) {
+                    authVM.updateLocationField(fields) {
                         goToGrades = true
                     }
                 } else {
                     let selected = customLocations.filter(\.isSelected)
-                    if !selected.isEmpty {
-                        let addresses = selected.map { $0.title }
-                        let distances = selected.map { $0.distance }
-                        let coordinates = selected.map {
-                            ["lat": $0.coordinates.latitude, "lng": $0.coordinates.longitude]
-                        }
-
+                    if let loc = selected.first {
                         let fields: [String: Any] = [
-                            "addresses": addresses,
-                            "distances": distances,
-                            "coordinates": coordinates
+                            "adresse": loc.title,
+                            "latitude": loc.coordinates.latitude,
+                            "longitude": loc.coordinates.longitude,
+                            "distance": loc.distance
                         ]
-
-                        authVM.updateUserFields(fields) {
+                        authVM.updateLocationField(fields) {
                             goToGrades = true
                         }
                     }
                 }
-            } 
+            }
             .padding(.horizontal)
 
             NavigationLink(
