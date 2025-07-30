@@ -15,8 +15,8 @@ struct PleinCapApp: App {
 
     var body: some Scene {
             WindowGroup {
-                ContentView()
-                    
+                HomeView()
+
             }
         }
 }
