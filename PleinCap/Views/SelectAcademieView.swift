@@ -1,9 +1,11 @@
 import SwiftUI
+
 struct Academie: Identifiable, Equatable {
     let id = UUID()
     let nom: String
     let description: String
 }
+
 struct SelectAcademieView: View {
     @EnvironmentObject var authVM: AuthViewModel
     @Binding var progress: Double
@@ -152,7 +154,8 @@ struct SelectAcademieView: View {
                 // ✅ Bouton Appliquer
                 PrimaryGradientButton(title: "Appliquer", enabled: selectedAcademie != nil) {
                     if let acad = selectedAcademie {
-                        authVM.updateLocationField(["academie": acad.nom]) {
+                        let newLocation = LocationData(academie: acad.nom)
+                        authVM.updateLocation(newLocation) {
                             progress += 0.1
                             goToNext = true
                         }

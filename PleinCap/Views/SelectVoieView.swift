@@ -51,6 +51,13 @@ struct SelectVoieView: View {
             }
             .padding(.horizontal)
             .padding(.bottom, 12)
+
+            // ✅ Ajout du NavigationLink déclenché
+            NavigationLink(
+                destination: nextDestinationView(),
+                isActive: $goToNext,
+                label: { EmptyView() }
+            )
         }
         .background(Color(UIColor.systemGroupedBackground))
         .navigationTitle("")
@@ -58,14 +65,17 @@ struct SelectVoieView: View {
         .onAppear {
             selectedVoie = nil
         }
-        .navigationDestination(isPresented: $goToNext) {
-            if selectedVoie == "Générale" {
-                SelectSpecialitesView(progress: $progress, niveau: niveau, voie:"Générale",                     filiere: nil) { _ in }
-            } else if selectedVoie == "Technologique" {
-                SelectFiliereView(progress: $progress, niveau: niveau)
-            } else {
-                EmptyView()
-            }
+    }
+
+    // ✅ Vue de destination dynamique
+    @ViewBuilder
+    private func nextDestinationView() -> some View {
+        if selectedVoie == "Générale" {
+            SelectSpecialitesView(progress: $progress, niveau: niveau, voie: "Générale", filiere: nil) { _ in }
+        } else if selectedVoie == "Technologique" {
+            SelectFiliereView(progress: $progress, niveau: niveau)
+        } else {
+            Text("Cette filière n’est pas encore disponible.")
         }
     }
 

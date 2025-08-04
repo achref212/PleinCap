@@ -16,12 +16,7 @@ struct LocationItem: Identifiable, Equatable {
     var isSelected: Bool = true
 
     static func == (lhs: LocationItem, rhs: LocationItem) -> Bool {
-        lhs.id == rhs.id &&
-        lhs.title == rhs.title &&
-        lhs.coordinates.latitude == rhs.coordinates.latitude &&
-        lhs.coordinates.longitude == rhs.coordinates.longitude &&
-        lhs.distance == rhs.distance &&
-        lhs.isSelected == rhs.isSelected
+        lhs.id == rhs.id
     }
 }
 
@@ -57,11 +52,7 @@ struct LocationPreferenceView: View {
                 ) {
                     selectedFrance.toggle()
                     if selectedFrance {
-                        customLocations = customLocations.map {
-                            var loc = $0
-                            loc.isSelected = false
-                            return loc
-                        }
+                        customLocations = customLocations.map { var loc = $0; loc.isSelected = false; return loc }
                     }
                 }
 
@@ -75,10 +66,10 @@ struct LocationPreferenceView: View {
                         loc.isSelected.toggle()
                         if loc.isSelected {
                             selectedFrance = false
-                            if customLocations.filter(\.isSelected).count == 1 {
+                            if customLocations.filter({ $0.isSelected }).count == 1 {
                                 progress = min(progress + 0.1, 1.0)
                             }
-                        } else if customLocations.filter(\.isSelected).isEmpty {
+                        } else if customLocations.filter({ $0.isSelected }).isEmpty {
                             progress = max(progress - 0.1, 0.3)
                         }
                     } onEdit: {
@@ -118,31 +109,20 @@ struct LocationPreferenceView: View {
 
             Spacer()
 
-            // ✅ Nouveau bouton "Suivant" avec updateLocationField
             PrimaryGradientButton(title: "Suivant") {
                 if selectedFrance {
-                    print("✅ Partout en France sélectionné")
-                    let fields: [String: Any] = [
-                        "adresse": "Partout en France",
-                        "latitude": 0.0,
-                        "longitude": 0.0,
-                        "distance": 0.0
-                    ]
-                    authVM.updateLocationField(fields) {
+                    let location = LocationData(adresse: "Partout en France", distance: 0.0, latitude: 0.0, longitude: 0.0)
+                    authVM.updateLocation(location) {
                         goToGrades = true
                     }
-                } else {
-                    let selected = customLocations.filter(\.isSelected)
-                    if let loc = selected.first {
-                        let fields: [String: Any] = [
-                            "adresse": loc.title,
-                            "latitude": loc.coordinates.latitude,
-                            "longitude": loc.coordinates.longitude,
-                            "distance": loc.distance
-                        ]
-                        authVM.updateLocationField(fields) {
-                            goToGrades = true
-                        }
+                } else if let loc = customLocations.first(where: { $0.isSelected }) {
+                    let location = LocationData(
+                        adresse: loc.title,
+                        distance: loc.distance, latitude: loc.coordinates.latitude,
+                        longitude: loc.coordinates.longitude
+                    )
+                    authVM.updateLocation(location) {
+                        goToGrades = true
                     }
                 }
             }
@@ -155,7 +135,6 @@ struct LocationPreferenceView: View {
                 EmptyView()
             }
             .hidden()
-            .padding(.horizontal)
         }
         .sheet(isPresented: $showLocationPicker) {
             LocalisationView { title, coord, distance in
@@ -164,9 +143,11 @@ struct LocationPreferenceView: View {
                     customLocations[index] = LocationItem(title: title, coordinates: coord, distance: distance, isSelected: true)
                 } else {
                     let newLoc = LocationItem(title: title, coordinates: coord, distance: distance)
-                    customLocations.append(newLoc)
-                    selectedFrance = false
-                    progress = min(progress + 0.1, 1.0)
+                    if !customLocations.contains(where: { $0.title == newLoc.title }) {
+                        customLocations.append(newLoc)
+                        selectedFrance = false
+                        progress = min(progress + 0.1, 1.0)
+                    }
                 }
                 showLocationPicker = false
             }

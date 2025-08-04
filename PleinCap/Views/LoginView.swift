@@ -19,17 +19,40 @@ struct LoginView: View {
                     .scaledToFit()
                     .frame(width: 100)
                     .padding(.top, 32)
-                    .padding(.bottom, 70)
+                    .padding(.bottom, 20)
 
                 AuthCard {
-                    VStack(spacing: 23) {
-                        Group {
+                    VStack(spacing: 24) {
+                        // ✅ Partie Google / Apple EN PREMIER
+                        VStack(spacing: 14) {
+                            Text("Connexion rapide avec")
+                                .font(.footnote)
+                                .foregroundColor(.secondary)
+
+                            HStack(spacing: 24) {
+                                SocialCircle(imageName: "appleLogo") {
+                                    print("Apple")
+                                }
+
+                                SocialCircle(imageName: "googleLogo") {
+                                    handleGoogleLogin()
+                                }
+                            }
+                        }
+
+                        // ✅ Séparateur
+                        HStack {
+                            DividerLabel(label: "ou connectez-vous avec votre email")
+                        }
+
+                        // ✅ Formulaire classique en dessous
+                        VStack(spacing: 20) {
                             LabeledField(
                                 sfIcon: "envelope",
                                 label: "Entrez votre adresse Email",
                                 prompt: "exemple@email.com",
                                 text: $authVM.email,
-                                secure: false,
+                                secure: false
                             )
 
                             LabeledField(
@@ -56,19 +79,7 @@ struct LoginView: View {
                             }
                         }
 
-                        VStack(spacing: 14) {
-                            Text("Connecter avec")
-                                .font(.footnote)
-                                .foregroundColor(.secondary)
-
-                            HStack(spacing: 24) {
-                                SocialCircle(imageName: "appleLogo") { print("Apple") }
-                                SocialCircle(imageName: "googleLogo") {
-                                    handleGoogleLogin()
-                                }
-                            }
-                        }
-
+                        // ✅ Inscription en bas
                         HStack(spacing: 6) {
                             Text("Pas encore de compte ?")
                                 .font(.footnote)
@@ -82,7 +93,7 @@ struct LoginView: View {
                 }
             }
 
-            // ✅ Status overlay avec blur
+            // ✅ Status overlay
             if let status = authVM.loginStatus {
                 ZStack {
                     VisualEffectBlur()
@@ -103,6 +114,7 @@ struct LoginView: View {
         .animation(.easeInOut(duration: 0.3), value: authVM.loginStatus)
     }
 }
+
 extension LoginView {
     func handleGoogleLogin() {
         guard let presentingVC = UIApplication.shared.connectedScenes
@@ -115,16 +127,13 @@ extension LoginView {
         authVM.signInWithGoogle(presenting: presentingVC) { success in
             if success {
                 print("✅ Connexion Google réussie")
-
-                // ⚠️ Pas besoin de dismiss ici si LoginView est une vue dans un NavigationStack (pas une sheet)
-                // L'état authVM.isAuthenticated = true déclenche la redirection dans HomeView
-
             } else {
                 print("❌ Erreur Google : \(authVM.errorMessage ?? "Inconnue")")
             }
         }
     }
 }
+
 #Preview {
     LoginView(authVM: AuthViewModel(), goToRegister: {}, goToForgot: {})
 }

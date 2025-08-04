@@ -192,101 +192,265 @@ class APIService {
             }
         }.resume()
     }
+    
     func getUserPlan(token: String, completion: @escaping (Result<PlanActionData, Error>) -> Void) {
-        getRequest(path: "/me/plan-action", token: token) { result in
-            switch result {
-            case .success(let data):
-                do {
-                    let decoded = try JSONDecoder().decode(PlanActionData.self, from: data)
-                    completion(.success(decoded))
-                } catch {
+           guard let url = URL(string: baseURL + "/me/plan-action") else {
+               completion(.failure(APIError.invalidURL))
+               return
+           }
+
+           var request = URLRequest(url: url)
+           request.httpMethod = "GET"
+           request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+           URLSession.shared.dataTask(with: request) { data, response, error in
+               if let error = error {
+                   completion(.failure(error))
+                   return
+               }
+
+               guard let httpResponse = response as? HTTPURLResponse else {
+                   completion(.failure(APIError.noData))
+                   return
+               }
+
+               switch httpResponse.statusCode {
+               case 200...299:
+                   guard let data = data else {
+                       completion(.failure(APIError.noData))
+                       return
+                   }
+                   do {
+                       let decoded = try JSONDecoder().decode(PlanActionData.self, from: data)
+                       completion(.success(decoded))
+                   } catch {
+                       completion(.failure(APIError.decodingError))
+                   }
+               case 401:
+                   completion(.failure(APIError.unauthorized))
+               case 404:
+                   completion(.failure(NSError(domain: "", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: "Plan action not found"])))
+               case 500...599:
+                   completion(.failure(APIError.serverError))
+               default:
+                   completion(.failure(NSError(domain: "", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: "Unexpected status code"])))
+               }
+           }.resume()
+       }
+
+       func updateUserLocation(_ locationData: LocationData, token: String, completion: @escaping (Result<UserProfile, Error>) -> Void) {
+           guard let url = URL(string: baseURL + "/me/location") else {
+               completion(.failure(APIError.invalidURL))
+               return
+           }
+
+           var request = URLRequest(url: url)
+           request.httpMethod = "PATCH"
+           request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+           request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+           do {
+               let body = try JSONEncoder().encode(locationData)
+               request.httpBody = body
+           } catch {
+               completion(.failure(error))
+               return
+           }
+
+           URLSession.shared.dataTask(with: request) { data, response, error in
+               if let error = error {
+                   completion(.failure(error))
+                   return
+               }
+
+               guard let httpResponse = response as? HTTPURLResponse else {
+                   completion(.failure(APIError.noData))
+                   return
+               }
+
+               switch httpResponse.statusCode {
+               case 200...299:
+                   guard let data = data else {
+                       completion(.failure(APIError.noData))
+                       return
+                   }
+                   do {
+                       let decoded = try JSONDecoder().decode(UserProfile.self, from: data)
+                       completion(.success(decoded))
+                   } catch {
+                       completion(.failure(APIError.decodingError))
+                   }
+               case 401:
+                   completion(.failure(APIError.unauthorized))
+               case 404:
+                   completion(.failure(NSError(domain: "", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: "Location not found"])))
+               case 500...599:
+                   completion(.failure(APIError.serverError))
+               default:
+                   completion(.failure(NSError(domain: "", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: "Unexpected status code"])))
+               }
+           }.resume()
+       }
+    // Update user's moyenne data (POST)
+        func updateUserMoyenne(_ moyenneData: MoyenneData, token: String, completion: @escaping (Result<MoyenneData, Error>) -> Void) {
+            guard let url = URL(string: baseURL + "/me/moyenne") else {
+                completion(.failure(APIError.invalidURL))
+                return
+            }
+
+            var request = URLRequest(url: url)
+            request.httpMethod = "POST"
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+            do {
+                let body = try JSONEncoder().encode(moyenneData)
+                request.httpBody = body
+            } catch {
+                completion(.failure(error))
+                return
+            }
+
+            URLSession.shared.dataTask(with: request) { data, response, error in
+                if let error = error {
                     completion(.failure(error))
+                    return
                 }
-            case .failure(let error):
-                completion(.failure(error))
-            }
-        }
-    }
-    func updateUserLocation(_ locationData: LocationData, token: String, completion: @escaping (Result<UserProfile, Error>) -> Void) {
-        guard let url = URL(string: baseURL + "/me/location") else {
-            completion(.failure(APIError.invalidURL))
-            return
+
+                guard let httpResponse = response as? HTTPURLResponse else {
+                    completion(.failure(APIError.noData))
+                    return
+                }
+
+                switch httpResponse.statusCode {
+                case 200...299:
+                    guard let data = data else {
+                        completion(.failure(APIError.noData))
+                        return
+                    }
+                    do {
+                        let decoded = try JSONDecoder().decode(MoyenneData.self, from: data)
+                        completion(.success(decoded))
+                    } catch {
+                        completion(.failure(APIError.decodingError))
+                    }
+                case 401:
+                    completion(.failure(APIError.unauthorized))
+                case 500...599:
+                    completion(.failure(APIError.serverError))
+                default:
+                    completion(.failure(NSError(domain: "", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: "Unexpected status code"])))
+                }
+            }.resume()
         }
 
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-
-        do {
-            let body = try JSONEncoder().encode(locationData)
-            request.httpBody = body
-        } catch {
-            completion(.failure(error))
-            return
-        }
-
-        URLSession.shared.dataTask(with: request) { data, response, error in
-            if let error = error {
-                completion(.failure(error))
+        // Get user's moyenne data (GET)
+        func getUserMoyenne(token: String, completion: @escaping (Result<MoyenneData, Error>) -> Void) {
+            guard let url = URL(string: baseURL + "/me/moyenne") else {
+                completion(.failure(APIError.invalidURL))
                 return
             }
 
-            guard let data = data else {
-                completion(.failure(APIError.noData))
+            var request = URLRequest(url: url)
+            request.httpMethod = "GET"
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+            URLSession.shared.dataTask(with: request) { data, response, error in
+                if let error = error {
+                    completion(.failure(error))
+                    return
+                }
+
+                guard let httpResponse = response as? HTTPURLResponse else {
+                    completion(.failure(APIError.noData))
+                    return
+                }
+
+                switch httpResponse.statusCode {
+                case 200...299:
+                    guard let data = data else {
+                        completion(.failure(APIError.noData))
+                        return
+                    }
+                    do {
+                        let decoded = try JSONDecoder().decode(MoyenneData.self, from: data)
+                        completion(.success(decoded))
+                    } catch {
+                        completion(.failure(APIError.decodingError))
+                    }
+                case 401:
+                    completion(.failure(APIError.unauthorized))
+                case 404:
+                    completion(.failure(NSError(domain: "", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: "Moyenne not found"])))
+                case 500...599:
+                    completion(.failure(APIError.serverError))
+                default:
+                    completion(.failure(NSError(domain: "", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: "Unexpected status code"])))
+                }
+            }.resume()
+        }
+
+        // Update existing moyenne data (PATCH)
+        func updateExistingMoyenne(_ moyenneData: MoyenneData, token: String, completion: @escaping (Result<MoyenneData, Error>) -> Void) {
+            guard let url = URL(string: baseURL + "/me/moyenne") else {
+                completion(.failure(APIError.invalidURL))
                 return
             }
+
+            var request = URLRequest(url: url)
+            request.httpMethod = "PATCH"
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
             do {
-                let decoded = try JSONDecoder().decode(UserProfile.self, from: data)
-                completion(.success(decoded))
+                let body = try JSONEncoder().encode(moyenneData)
+                request.httpBody = body
             } catch {
-                completion(.failure(error))
-            }
-        }.resume()
-    }
-    func updateUserMoyenne(_ moyenneData: MoyenneData, token: String, completion: @escaping (Result<UserProfile, Error>) -> Void) {
-        guard let url = URL(string: baseURL + "/me/moyenne") else {
-            completion(.failure(APIError.invalidURL))
-            return
-        }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-
-        do {
-            let body = try JSONEncoder().encode(moyenneData)
-            request.httpBody = body
-        } catch {
-            completion(.failure(error))
-            return
-        }
-
-        URLSession.shared.dataTask(with: request) { data, response, error in
-            if let error = error {
                 completion(.failure(error))
                 return
             }
 
-            guard let data = data else {
-                completion(.failure(APIError.noData))
-                return
-            }
+            URLSession.shared.dataTask(with: request) { data, response, error in
+                if let error = error {
+                    completion(.failure(error))
+                    return
+                }
 
-            do {
-                let decoded = try JSONDecoder().decode(UserProfile.self, from: data)
-                completion(.success(decoded))
-            } catch {
-                completion(.failure(error))
-            }
-        }.resume()
-    }
+                guard let httpResponse = response as? HTTPURLResponse else {
+                    completion(.failure(APIError.noData))
+                    return
+                }
+
+                switch httpResponse.statusCode {
+                case 200...299:
+                    guard let data = data else {
+                        completion(.failure(APIError.noData))
+                        return
+                    }
+                    do {
+                        let decoded = try JSONDecoder().decode(MoyenneData.self, from: data)
+                        completion(.success(decoded))
+                    } catch {
+                        completion(.failure(APIError.decodingError))
+                    }
+                case 401:
+                    completion(.failure(APIError.unauthorized))
+                case 404:
+                    completion(.failure(NSError(domain: "", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: "Moyenne not found"])))
+                case 500...599:
+                    completion(.failure(APIError.serverError))
+                default:
+                    completion(.failure(NSError(domain: "", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: "Unexpected status code"])))
+                }
+            }.resume()
+        }
 }
 
 enum APIError: Error {
     case invalidURL
     case noData
     case invalidResponse
+    case decodingError
+    case unauthorized
+    case serverError
 }

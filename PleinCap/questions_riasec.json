@@ -1,0 +1,251 @@
+[
+  {
+    "id": 1,
+    "kind": "single",
+    "text": "J'ai tendance à être distrait",
+    "options": [
+      "Assez bien",
+      "Un peu",
+      "Pas vraiment",
+      "Pas du tout"
+    ],
+    "correctLetters": [
+      "",
+      "",
+      "R",
+      "R"
+    ]
+  },
+  {
+    "id": 2,
+    "kind": "single",
+    "text": "J'ai des aptitudes artistiques",
+    "options": [
+      "Assez bien",
+      "Un peu",
+      "Pas vraiment",
+      "Pas du tout"
+    ],
+    "correctLetters": [
+      "A",
+      "A",
+      "",
+      ""
+    ]
+  },
+  {
+    "id": 3,
+    "kind": "single",
+    "text": "J'ai des aptitudes aux travaux administratifs",
+    "options": [
+      "Assez bien",
+      "Un peu",
+      "Pas vraiment",
+      "Pas du tout"
+    ],
+    "correctLetters": [
+      "C",
+      "C",
+      "",
+      ""
+    ]
+  },
+  {
+    "id": 4,
+    "kind": "single",
+    "text": "J'ai des aptitudes à la recherche scientifique",
+    "options": [
+      "Assez bien",
+      "Un peu",
+      "Pas vraiment",
+      "Pas du tout"
+    ],
+    "correctLetters": [
+      "I",
+      "I",
+      "",
+      ""
+    ]
+  },
+  {
+    "id": 5,
+    "kind": "single",
+    "text": "J'ai des aptitudes à comprendre les autres",
+    "options": [
+      "Assez bien",
+      "Pas mal",
+      "Pas vraiment",
+      "Pas du tout"
+    ],
+    "correctLetters": [
+      "S",
+      "S",
+      "",
+      ""
+    ]
+  },
+  {
+    "id": 6,
+    "kind": "adjective",
+    "text": "Choisis 2 adjectifs qui te ressemblent le plus telle[le] que tu es et non pas telle[le] que tu voudrais être. Le répondant ne doit pas pouvoir sélectionner plus de 2 adjectifs.",
+    "options": [
+      "adroit",
+      "compréhensif",
+      "ambitieux",
+      "idéaliste",
+      "capable",
+      "amical",
+      "organisé",
+      "ingénieux",
+      "actif",
+      "consciencieux",
+      "artiste",
+      "habile"
+    ],
+    "correctLetters": [
+      "R",
+      "S",
+      "E",
+      "A",
+      "I",
+      "S",
+      "C",
+      "R",
+      "E",
+      "C",
+      "A",
+      "I"
+    ]
+  },
+  {
+    "id": 7,
+    "kind": "single",
+    "text": "Être heureux et satisfait",
+    "options": [
+      "Essentiel",
+      "Très important",
+      "Assez important",
+      "Peu important"
+    ],
+    "correctLetters": [
+      "C",
+      "C",
+      "",
+      ""
+    ]
+  },
+  {
+    "id": 8,
+    "kind": "single",
+    "text": "Inventer ou développer un dispositif ou un produit utile",
+    "options": [
+      "Essentiel",
+      "Très important",
+      "Assez important",
+      "Peu important"
+    ],
+    "correctLetters": [
+      "R",
+      "R",
+      "",
+      ""
+    ]
+  },
+  {
+    "id": 9,
+    "kind": "single",
+    "text": "Aider les personnes en difficulté",
+    "options": [
+      "Essentiel",
+      "Très important",
+      "Assez important",
+      "Peu important"
+    ],
+    "correctLetters": [
+      "S",
+      "S",
+      "",
+      ""
+    ]
+  },
+  {
+    "id": 10,
+    "kind": "single",
+    "text": "Apporter à la science une contribution technique",
+    "options": [
+      "Essentiel",
+      "Très important",
+      "Assez important",
+      "Peu important"
+    ],
+    "correctLetters": [
+      "I",
+      "I",
+      "",
+      ""
+    ]
+  },
+  {
+    "id": 11,
+    "kind": "single",
+    "text": "Indiquer l'activité qui te plairait le plus",
+    "options": [
+      "lire, étudier, et réfléchir à la résolution de problèmes",
+      "prendre des décisions éclairées sur des décisions d'entreprises",
+      "exercer une fonction de manager (diriger une équipe)",
+      "enseigner, aider le secteur autour",
+      "travailler dans une mairie, à l'école (écrits, appareil, matériel)",
+      "exercer ses talents artistiques"
+    ],
+    "correctLetters": [
+      "I",
+      "E",
+      "E",
+      "S",
+      "C",
+      "A"
+    ]
+  },
+  {
+    "id": 12,
+    "kind": "choice",
+    "text": "Indique le domaine dans lequel tu te sens le moins compétent en cochant la ligne dans la colonne -",
+    "options": [
+      "commerce",
+      "domaine créatif (publicité, graphisme, décoration)",
+      "sciences",
+      "management, diriger les autres",
+      "relation humaine, aider les autres",
+      "mécanique, technique"
+    ],
+    "correctLetters": [
+      "A",
+      "C",
+      "E",
+      "I",
+      "R",
+      "S"
+    ]
+  },
+  {
+    "id": 13,
+    "kind": "choice",
+    "text": "Indique le domaine dans lequel tu te sens le plus capable en cochant la ligne dans la colonne +",
+    "options": [
+      "commerce",
+      "domaine créatif (publicité, graphisme, décoration)",
+      "sciences",
+      "management, diriger les autres",
+      "relation humaine, aider les autres",
+      "mécanique, technique"
+    ],
+    "correctLetters": [
+      "C",
+      "A",
+      "I",
+      "E",
+      "S",
+      "R"
+    ]
+  }
+]

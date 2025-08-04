@@ -34,7 +34,8 @@ struct SelectObjectiveView: View {
                 // ✅ Nouveau bouton dégradé
                 PrimaryGradientButton(title: "Suivant", enabled: selectedObjective != nil) {
                     if let selected = selectedObjective {
-                        authVM.updateObjectif(selected) {
+                        authVM.updateUserFields(["objectif": selected]) {
+                            authVM.objectif = selected
                             goToNext = true
                         }
                     }

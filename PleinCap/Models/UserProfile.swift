@@ -6,68 +6,63 @@ struct UserProfile: Codable {
     let nom: String
     let prenom: String
     let sexe: String
-    let dateNaissance: String
+    let dateNaissance: Date  // Changed to Date for better handling
     let profilePicture: String?
 
     let niveauScolaire: String?
     let voie: String?
     let objectif: String?
-
-    let specialites: [String]?
-    let filiere: [String]?
-
-    let moyenneGenerale: Double?
-    let moyenneFrancais: Double?
-    let moyennePhilo: Double?
-    let moyenneMath: Double?
-    let moyenneSvt: Double?
-    let moyennePhysique: Double?
-    let moyenneAnglais: Double?
+    let specialites: [String]?  // JSON array from backend
+    let filiere: String?
 
     let telephone: String?
-    let etablissement: String?
-    let adresse: String?
-    let distance: String?
     let budget: String?
 
-    let academie: String?
     let estBoursier: Bool?
-    let planAction: [String]?
+    var planActionId: Int?  // Changed to match plan_action_id
 
-    let createdAt: String?
-    let updatedAt: String?
+    let createdAt: Date?  // Changed to Date
+    let updatedAt: Date?  // Changed to Date
 
-    // Initialiseur manuel pour compatibilité complète
+    // Optional nested relationships
+    var moyenne: MoyenneData?  // Link to Moyenne model
+    let location: LocationData?  // Link to Location model
+
+    enum CodingKeys: String, CodingKey {
+        case id, email, nom, prenom, sexe
+        case dateNaissance = "date_naissance"
+        case profilePicture = "profile_picture"
+        case niveauScolaire = "niveau_scolaire"
+        case voie, objectif, specialites, filiere
+        case telephone, budget
+        case estBoursier = "est_boursier"
+        case planActionId = "plan_action_id"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+        case moyenne, location
+    }
+
     init(
-        id: Int?,
+        id: Int? = nil,
         email: String,
         nom: String,
         prenom: String,
         sexe: String,
-        dateNaissance: String,
-        profilePicture: String?,
-        niveauScolaire: String?,
-        voie: String?,
-        objectif: String?,
-        specialites: [String]?,
-        filiere: [String]?,
-        moyenneGenerale: Double?,
-        moyenneFrancais: Double?,
-        moyennePhilo: Double?,
-        moyenneMath: Double?,
-        moyenneSvt: Double?,
-        moyennePhysique: Double?,
-        moyenneAnglais: Double?,
-        telephone: String?,
-        etablissement: String?,
-        adresse: String?,
-        distance: String?,
-        budget: String?,
-        academie: String?,
-        estBoursier: Bool?,
-        planAction: [String]?,
-        createdAt: String?,
-        updatedAt: String?
+        dateNaissance: Date,
+        profilePicture: String? = nil,
+        niveauScolaire: String? = nil,
+        voie: String? = nil,
+        objectif: String? = nil,
+        specialites: [String]? = nil,
+        filiere: String? = nil,
+        telephone: String? = nil,
+        budget: String? = nil,
+        estBoursier: Bool? = nil,
+        planActionId: Int? = nil,
+        createdAt: Date? = nil,
+        updatedAt: Date? = nil,
+        moyenne: MoyenneData? = nil,
+        location: LocationData? = nil
     ) {
         self.id = id
         self.email = email
@@ -81,43 +76,14 @@ struct UserProfile: Codable {
         self.objectif = objectif
         self.specialites = specialites
         self.filiere = filiere
-        self.moyenneGenerale = moyenneGenerale
-        self.moyenneFrancais = moyenneFrancais
-        self.moyennePhilo = moyennePhilo
-        self.moyenneMath = moyenneMath
-        self.moyenneSvt = moyenneSvt
-        self.moyennePhysique = moyennePhysique
-        self.moyenneAnglais = moyenneAnglais
         self.telephone = telephone
-        self.etablissement = etablissement
-        self.adresse = adresse
-        self.distance = distance
         self.budget = budget
-        self.academie = academie
         self.estBoursier = estBoursier
-        self.planAction = planAction
+        self.planActionId = planActionId
         self.createdAt = createdAt
         self.updatedAt = updatedAt
-    }
-    enum CodingKeys: String, CodingKey {
-        case id, email, nom, prenom, sexe
-        case dateNaissance = "date_naissance"
-        case profilePicture = "profile_picture"
-        case niveauScolaire = "niveau_scolaire"
-        case voie, specialites, filiere,objectif
-        case moyenneGenerale = "moyenne_generale"
-        case moyenneFrancais = "moyenne_francais"
-        case moyennePhilo = "moyenne_philo"
-        case moyenneMath = "moyenne_math"
-        case moyenneSvt = "moyenne_svt"
-        case moyennePhysique = "moyenne_physique"
-        case moyenneAnglais = "moyenne_anglais"
-        case telephone,etablissement ,adresse, distance, budget
-        case academie
-        case estBoursier = "est_boursier"
-        case planAction = "plan_action"
-        case createdAt = "created_at"
-        case updatedAt = "updated_at"
+        self.moyenne = moyenne
+        self.location = location
     }
 
     init(from decoder: Decoder) throws {
@@ -127,34 +93,27 @@ struct UserProfile: Codable {
         self.nom = try container.decode(String.self, forKey: .nom)
         self.prenom = try container.decode(String.self, forKey: .prenom)
         self.sexe = try container.decode(String.self, forKey: .sexe)
-        self.dateNaissance = try container.decode(String.self, forKey: .dateNaissance)
-        self.profilePicture = try container.decodeIfPresent(String.self, forKey: .profilePicture)
 
+        // Decode date fields with a custom date strategy
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ" // ISO 8601 format
+        dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+        self.dateNaissance = try container.decode(Date.self, forKey: .dateNaissance)
+        self.createdAt = try container.decodeIfPresent(Date.self, forKey: .createdAt)
+        self.updatedAt = try container.decodeIfPresent(Date.self, forKey: .updatedAt)
+
+        self.profilePicture = try container.decodeIfPresent(String.self, forKey: .profilePicture)
         self.niveauScolaire = try container.decodeIfPresent(String.self, forKey: .niveauScolaire)
         self.voie = try container.decodeIfPresent(String.self, forKey: .voie)
         self.objectif = try container.decodeIfPresent(String.self, forKey: .objectif)
         self.specialites = try container.decodeIfPresent([String].self, forKey: .specialites)
-        self.filiere = try container.decodeIfPresent([String].self, forKey: .filiere)
-
-        self.moyenneGenerale = try container.decodeIfPresent(Double.self, forKey: .moyenneGenerale)
-        self.moyenneFrancais = try container.decodeIfPresent(Double.self, forKey: .moyenneFrancais)
-        self.moyennePhilo = try container.decodeIfPresent(Double.self, forKey: .moyennePhilo)
-        self.moyenneMath = try container.decodeIfPresent(Double.self, forKey: .moyenneMath)
-        self.moyenneSvt = try container.decodeIfPresent(Double.self, forKey: .moyenneSvt)
-        self.moyennePhysique = try container.decodeIfPresent(Double.self, forKey: .moyennePhysique)
-        self.moyenneAnglais = try container.decodeIfPresent(Double.self, forKey: .moyenneAnglais)
-
+        self.filiere = try container.decodeIfPresent(String.self, forKey: .filiere)
         self.telephone = try container.decodeIfPresent(String.self, forKey: .telephone)
-        self.etablissement = try container.decodeIfPresent(String.self, forKey: .etablissement)
-        self.adresse = try container.decodeIfPresent(String.self, forKey: .adresse)
-        self.distance = try container.decodeIfPresent(String.self, forKey: .distance)
         self.budget = try container.decodeIfPresent(String.self, forKey: .budget)
-
-        self.academie = try container.decodeIfPresent(String.self, forKey: .academie)
         self.estBoursier = try container.decodeIfPresent(Bool.self, forKey: .estBoursier)
-        self.planAction = try container.decodeIfPresent([String].self, forKey: .planAction)
-        self.createdAt = try container.decodeIfPresent(String.self, forKey: .createdAt)
-        self.updatedAt = try container.decodeIfPresent(String.self, forKey: .updatedAt)
+        self.planActionId = try container.decodeIfPresent(Int.self, forKey: .planActionId)
+        self.moyenne = try container.decodeIfPresent(MoyenneData.self, forKey: .moyenne)
+        self.location = try container.decodeIfPresent(LocationData.self, forKey: .location)
     }
 }
 extension UserProfile {
@@ -164,29 +123,40 @@ extension UserProfile {
         nom: "Doe",
         prenom: "John",
         sexe: "H",
-        dateNaissance: "2000-01-01",
+        dateNaissance: {
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "yyyy-MM-dd"
+            return dateFormatter.date(from: "2000-01-01")!
+        }(),
         profilePicture: nil,
         niveauScolaire: "Terminale",
         voie: "Générale",
         objectif: "test",
         specialites: ["Maths", "NSI"],
-        filiere: ["Scientifique"],
-        moyenneGenerale: 15.0,
-        moyenneFrancais: 14.5,
-        moyennePhilo: 13.0,
-        moyenneMath: 17.0,
-        moyenneSvt: 16.5,
-        moyennePhysique: 16.0,
-        moyenneAnglais: 15.5,
+        filiere: "Scientifique",
         telephone: "+33 6 12 34 56 78",
-        etablissement: "Lycée Jean Monnet",
-        adresse: "12 rue des Lilas, Paris",
-        distance: "20km",
         budget: "10000",
-        academie: "Versailles",
         estBoursier: true,
-        planAction: ["Découvrir les prépas", "Explorer les écoles d’ingénieurs"],
-        createdAt: "2024-06-01T10:00:00Z",
-        updatedAt: "2025-07-23T14:30:00Z"
+        planActionId: 1,
+        createdAt: {
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
+            return dateFormatter.date(from: "2024-06-01T10:00:00Z")!
+        }(),
+        updatedAt: {
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
+            return dateFormatter.date(from: "2025-07-23T14:30:00Z")!
+        }(),
+        moyenne: MoyenneData(
+            specialty: ["Math", "Physics"],
+            notes: [NoteData(subject: "Math", score: 15.5), NoteData(subject: "French", score: 14.0)]
+        ),
+        location: LocationData(
+            adresse: "12 rue des Lilas, Paris",
+            distance: 20,
+            etablissement: "Lycée Jean Monnet",
+            academie: "Versailles"
+        )
     )
 }

@@ -84,7 +84,7 @@ struct SelectLevelView: View {
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             selectedLevel = nil
-            progress = 0.0
+            progress = 0.2
             goToOptions = false
         }
     }

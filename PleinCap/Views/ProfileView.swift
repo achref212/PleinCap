@@ -34,7 +34,6 @@ struct ProfileView: View {
                         layout {
                             profileItem("Email", value: user.email)
                             profileItem("Sexe", value: user.sexe)
-                            profileItem("Date de naissance", value: user.dateNaissance)
                         }
 
                         // 🔹 Champs supplémentaires si disponibles
@@ -48,12 +47,12 @@ struct ProfileView: View {
                             profileItem("Spécialités", value: bac.joined(separator: ", "))
                         }
                         if let filiere = user.filiere, !filiere.isEmpty {
-                            profileItem("Filière", value: filiere.joined(separator: ", "))
+                           
                         }
-                        if let region = user.adresse {
+                        if let region = user.location?.adresse {
                             profileItem("Adresse", value: region)
                         }
-                        if let academie = user.academie {
+                        if let academie = user.location?.academie {
                             profileItem("Académie", value: academie)
                         }
 

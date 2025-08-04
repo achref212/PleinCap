@@ -14,7 +14,7 @@ enum Appearance: String, CaseIterable, Identifiable {
     case light = "Light"
     case dark = "Dark"
 
-    var id: String { self.rawValue }
+    var id: String { rawValue }
 }
 
 struct HomeView: View {
@@ -23,81 +23,102 @@ struct HomeView: View {
     @State private var flow: AuthFlowStep = .login
     @State private var selectedTab = 0
     @State private var progress: Double = 0.0
-    @State private var showSelectLevel = false
+    @State private var navigationPath = NavigationPath() // Added for NavigationStack path management
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $navigationPath) {
             Group {
                 if !hasSeenOnboarding {
                     OnboardingView()
+                        .navigationDestination(isPresented: .constant(!hasSeenOnboarding)) {
+                            appFlow
+                        }
                 } else {
                     appFlow
                 }
             }
-            .navigationDestination(isPresented: $showSelectLevel) {
-                SelectLevelView(progress: $progress)
-                    .environmentObject(authVM)
-            }
+            .environmentObject(authVM)
+            .animation(.easeInOut, value: [authVM.isAuthenticated, hasSeenOnboarding]) // Consolidated animation triggers
         }
-        .environmentObject(authVM)
-        .animation(.easeInOut, value: authVM.isAuthenticated)
     }
 
     @ViewBuilder
     private var appFlow: some View {
         if authVM.isAuthenticated {
-            if authVM.userObjectif == nil {
+            if authVM.objectif == nil {
                 SelectObjectiveView()
                     .environmentObject(authVM)
-            } else if authVM.niveauScolaire == nil {
-                SelectLevelView(progress: $progress)
-                    .environmentObject(authVM)
-            } else if authVM.voie == nil {
-                SelectVoieView(progress: $progress, niveau: authVM.niveauScolaire ?? "")
-                    .environmentObject(authVM)
-            } else if authVM.voie == "Générale" && ((authVM.specialites?.isEmpty) != nil) {
-                SelectSpecialitesView(
-                    progress: $progress,
-                    niveau: authVM.niveauScolaire ?? "",
-                    voie: "Générale",
-                    filiere: nil
-                ) { _ in }
-                .environmentObject(authVM)
-            } else if authVM.voie == "Technologique" && authVM.filiere == nil {
-                SelectFiliereView(progress: $progress, niveau: authVM.niveauScolaire ?? "")
-                    .environmentObject(authVM)
-            } else if authVM.voie == "Technologique" && authVM.specialites!.isEmpty {
-                SelectSpecialitesView(
-                    progress: $progress,
-                    niveau: authVM.niveauScolaire ?? "",
-                    voie: "Technologique",
-                    filiere: authVM.filiere?.first
-                ) { _ in }
-                .environmentObject(authVM)
-            } else if $authVM.etablissement == nil {
-                SelectEtablissementView(progress: $progress)
-                    .environmentObject(authVM)
-            } else if authVM.academie == nil {
-                SelectAcademieView(progress: $progress)
-                    .environmentObject(authVM)
-            } else if authVM.adresse!.isEmpty {
-                LocationPreferenceView(initialProgress: progress)
-                    .environmentObject(authVM)
-            } else if (authVM.moyenneGenerale ?? 0) == 0 {
-                SchoolGradeEntryView(progress: $progress)
-                    .environmentObject(authVM)
-            } else {
-                MainTabView(
-                    selectedTab: $selectedTab,
-                    authVM: authVM,
-                    onLogout: {
-                        flow = .login
-                        authVM.logout()
+                    .navigationDestination(isPresented: .constant(authVM.objectif != nil)) {
+                        nextView
                     }
-                )
+            } else {
+                nextView
             }
         } else {
             AuthContainer(flow: $flow, authVM: authVM)
+        }
+    }
+
+    @ViewBuilder
+    private var nextView: some View {
+        if authVM.niveauScolaire == nil {
+            SelectLevelView(progress: $progress)
+                .environmentObject(authVM)
+
+        } else if authVM.voie == nil {
+            SelectVoieView(
+                progress: $progress,
+                niveau: authVM.niveauScolaire ?? "Terminale"
+            )
+            .environmentObject(authVM)
+
+        } else if authVM.voie == "Générale" && (authVM.specialites?.isEmpty ?? true) {
+            SelectSpecialitesView(
+                progress: $progress,
+                niveau: authVM.niveauScolaire ?? "Terminale",
+                voie: "Générale",
+                filiere: nil
+            ) { _ in }
+            .environmentObject(authVM)
+
+        } else if authVM.voie == "Technologique" && (authVM.filiere?.isEmpty ?? true) {
+            SelectFiliereView(
+                progress: $progress,
+                niveau: authVM.niveauScolaire ?? "Terminale"
+            )
+            .environmentObject(authVM)
+
+        } else if authVM.voie == "Technologique" && (authVM.specialites?.isEmpty ?? true) {
+            SelectSpecialitesView(
+                progress: $progress,
+                niveau: authVM.niveauScolaire ?? "Terminale",
+                voie: "Technologique",
+                filiere: authVM.filiere // ✅ correction ici
+            ) { _ in }
+            .environmentObject(authVM)
+
+        } else if authVM.locationData?.etablissement == nil {
+            SelectEtablissementView(progress: $progress)
+                .environmentObject(authVM)
+
+        } else if authVM.locationData?.academie == nil {
+            SelectAcademieView(progress: $progress)
+                .environmentObject(authVM)
+
+        } else if authVM.locationData?.adresse?.isEmpty ?? true {
+            LocationPreferenceView(initialProgress: progress)
+                .environmentObject(authVM)
+
+        } else {
+            MainTabView(
+                selectedTab: $selectedTab,
+                authVM: authVM,
+                onLogout: {
+                    flow = .login
+                    authVM.logout()
+                    navigationPath = NavigationPath()
+                }
+            )
         }
     }
 }

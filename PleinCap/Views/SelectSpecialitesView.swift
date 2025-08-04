@@ -2,7 +2,6 @@ import SwiftUI
 
 struct SelectSpecialitesView: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-    @Environment(\.verticalSizeClass) var verticalSizeClass
     @EnvironmentObject var authVM: AuthViewModel
 
     @Binding var progress: Double
@@ -14,42 +13,68 @@ struct SelectSpecialitesView: View {
     let filiere: String?
     let onSpecialitesSelected: ([String]) -> Void
 
-    var maxSelection: Int {
-        niveau.lowercased() == "terminale" ? 2 : 3
+    var isTerminale: Bool {
+        niveau.lowercased() == "terminale"
+    }
+
+    var maxSelectionDefault: Int {
+        isTerminale ? 2 : 3
     }
 
     var groupedSpecialites: [String: [String]] {
-        if voie.lowercased() == "générale" {
-            return [
-                "Arts (au choix)": ["Histoire des arts", "Théâtre", "Arts plastiques", "Arts du cirque","Cinéma-audiovisuel", "Danse", "Musique"],
-               
-                "Scientifiques": [
-                    "Biologie, écologie", "Éducation physique", "Histoire-géo / géopolitique",
-                    "Humanités / philosophie", "Langues vivantes",
-                    "Langues anciennes", "Mathématiques", "Numérique et informatique",
-                    "Physique-chimie", "Sciences de la vie et de la Terre", "Sciences de l’ingénieur"
-                ]
-            ]
-        }
-
         switch filiere?.uppercased() {
         case "STMG":
-            return ["Spécialités STMG": [
-                "Droit et économie & Gestion et finances",
-                "Droit et économie & Mercatique (marketing)",
-                "Droit et économie & RH et communication",
-                "Droit et économie & SIG"
-            ]]
+            if isTerminale {
+                return ["Spécialité STMG Terminale": [
+                    "Gestion et finances",
+                    "Mercatique",
+                    "Ressources humaines et communication",
+                    "Systèmes d’information de gestion"
+                ]]
+            }
+        case "STAV":
+            if isTerminale {
+                return ["Territoires et technologie": [
+                    "Aménagement",
+                    "Production",
+                    "Agroéquipement",
+                    "Services",
+                    "Transformation"
+                ]]
+            } else {
+                return ["Technologie STAV": [
+                    "Aménagement",
+                    "Production",
+                    "Agroéquipement",
+                    "Services",
+                    "Transformation"
+                ]]
+            }
         case "STI2D":
-            return ["Spécialités STI2D": [
-                "PC + Maths & Innovation technologique",
-                "PC + Maths & Systèmes numériques",
-                "PC + Maths & Énergies et environnement",
-                "PC + Maths & Architecture et construction"
-            ]]
+            if isTerminale {
+                return ["Spécialité STI2D": [
+                    "PC + Maths & Innovation technologique et éco-conception",
+                    "PC + Maths & Systèmes d'information et numériques",
+                    "PC + Maths & Énergies et environnement",
+                    "PC + Maths & Architecture et construction"
+                ]]
+            }
+        case "S2TMD":
+            return [
+                "Culture et sciences": [
+                    "Culture et sciences chorégraphiques",
+                    "Culture et sciences musicales",
+                    "Culture et sciences théâtrales"
+                ],
+                "Pratique artistique": [
+                    "Pratique chorégraphique",
+                    "Pratique musicale",
+                    "Pratique théâtrale"
+                ]
+            ]
         case "STL":
             return ["Spécialités STL": [
-                "Biochimie-biologie-biotechnologies",
+                "Biotechnologies",
                 "Sciences physiques et chimiques en laboratoire"
             ]]
         case "ST2S":
@@ -65,22 +90,49 @@ struct SelectSpecialitesView: View {
             return ["Spécialités STD2A": [
                 "Création design & Analyse design"
             ]]
-        case "STAV":
-            return ["Spécialités STAV": [
-                "Ressources & Territoires (production)",
-                "Ressources & Territoires (services)",
-                "Ressources & Territoires (transformation)",
-                "Ressources & Territoires (agroéquipement)"
-            ]]
-        case "S2TMD":
-            return ["Spécialités S2TMD": [
-                "Sciences et techniques de la danse",
-                "Sciences et techniques du théâtre",
-                "Sciences et techniques de la musique"
-            ]]
+        case "GÉNÉRALE":
+            return [
+                "Arts (au choix)": ["Histoire des arts", "Théâtre", "Arts plastiques", "Arts du cirque", "Cinéma-audiovisuel", "Danse", "Musique"],
+                "Scientifiques": [
+                    "Biologie, écologie", "Éducation physique", "Histoire-géo / géopolitique",
+                    "Humanités / philosophie", "Langues vivantes",
+                    "Langues anciennes", "Mathématiques", "Numérique et informatique",
+                    "Physique-chimie", "Sciences de la vie et de la Terre", "Sciences de l’ingénieur"
+                ]
+            ]
         default:
             return [:]
         }
+        return [:]
+    }
+
+    var maxSelectionPerSection: [String: Int] {
+        var config: [String: Int] = [:]
+        for key in groupedSpecialites.keys {
+            switch key {
+            case "Culture et sciences", "Pratique artistique":
+                config[key] = 1
+            case "Spécialité STMG Terminale",
+                 "Spécialité STI2D",
+                 "Spécialités STL",
+                 "Technologie STAV",
+                 "Territoires et technologie":
+                config[key] = 1
+            default:
+                config[key] = maxSelectionDefault
+            }
+        }
+        return config
+    }
+
+    func isValidSelection() -> Bool {
+        for (section, max) in maxSelectionPerSection {
+            let selectedInSection = groupedSpecialites[section]?.filter { selectedSpecialites.contains($0) } ?? []
+            if selectedInSection.count != max {
+                return false
+            }
+        }
+        return true
     }
 
     var body: some View {
@@ -103,7 +155,7 @@ struct SelectSpecialitesView: View {
                                 .font(dynamicTypeSize.isAccessibilitySize ? .title3.bold() : .title3.bold())
                                 .foregroundColor(Color(hex: "#2C4364"))
 
-                            Text("Il faut choisir \(maxSelection) spécialités")
+                            Text("Tu dois faire une sélection dans chaque groupe")
                                 .font(dynamicTypeSize.isAccessibilitySize ? .body : .subheadline)
                                 .foregroundColor(.secondary)
                         }
@@ -117,7 +169,7 @@ struct SelectSpecialitesView: View {
                                 AccordionCheckboxSectionView(
                                     title: category,
                                     options: options,
-                                    maxSelection: maxSelection,
+                                    maxSelection: maxSelectionPerSection[category] ?? maxSelectionDefault,
                                     selectedItems: $selectedSpecialites
                                 )
                             }
@@ -129,17 +181,18 @@ struct SelectSpecialitesView: View {
             }
 
             VStack {
-                PrimaryGradientButton(title: "Suivant", enabled: !selectedSpecialites.isEmpty) {
-                    if !selectedSpecialites.isEmpty {
-                        authVM.updateUserFields(["specialites": Array(selectedSpecialites)]) {
-                            onSpecialitesSelected(Array(selectedSpecialites))
-                            goToNext = true
-                        }
+                PrimaryGradientButton(
+                    title: "Suivant",
+                    enabled: isValidSelection()
+                ) {
+                    authVM.updateUserFields(["specialites": Array(selectedSpecialites)]) {
+                        onSpecialitesSelected(Array(selectedSpecialites))
+                        goToNext = true
                     }
                 }
                 .padding(.horizontal)
 
-                NavigationLink(destination: SelectEtablissementView( progress: $progress), isActive: $goToNext) {
+                NavigationLink(destination: SelectEtablissementView(progress: $progress), isActive: $goToNext) {
                     EmptyView()
                 }
             }
@@ -164,9 +217,9 @@ struct SelectSpecialitesView_Previews: PreviewProvider {
             NavigationStack {
                 SelectSpecialitesView(
                     progress: $progress,
-                    niveau: "Terminale",
-                    voie: "Technologique",
-                    filiere: "STI2D"
+                    niveau: "primere",
+                    voie: "GÉNÉRALE",
+                    filiere: ""
                 ) { _ in }
                 .environmentObject(authVM)
             }
