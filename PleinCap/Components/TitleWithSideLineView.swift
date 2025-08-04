@@ -23,7 +23,7 @@ struct TitleWithSideLineView: View {
         colorScheme == .dark ? Color.gray.opacity(0.7) : Color.gray
     }
     var cardBackgroundColor: Color {
-        colorScheme == .dark ? Color(white: 0.15) : Color(white: 0.95)
+        colorScheme == .dark ? Color(white: 0.05) : Color(white: 1.05)
     }
     var accentLineColor: Color {
         Color.orange

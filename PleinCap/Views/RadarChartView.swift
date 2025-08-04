@@ -1,40 +1,51 @@
-//
-//  RadarChartView.swift
-//  PleinCap
-//
-//  Created by chaabani achref on 4/8/2025.
-//
-
 import SwiftUI
 import Charts
 
+// MARK: - Radar Chart View
 struct RadarChartView: View {
     let rawScores: [String: Int]
     let normalizedScores: [String: Int]
 
-    let categories = ["Réaliste", "Investigateur", "Artiste", "Social", "Entreprenant", "Conventionnel"]
+    let letters = ["R", "I", "A", "S", "E", "C"]
+    let poleNames = [
+        "R": "Réaliste",
+        "I": "Investigateur",
+        "A": "Artistique",
+        "S": "Social",
+        "E": "Entreprenant",
+        "C": "Conventionnel"
+    ]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Radar RIASEC")
-                .font(.title3.bold())
+            HStack(spacing: 12) {
+                Rectangle().fill(Color.orange).frame(width: 4)
+                Text("Radar RIASEC")
+                    .font(.title3.bold())
+            }.padding(.horizontal)
+
+            Text("Sources bruts vs étalonnées")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
                 .padding(.horizontal)
 
             Chart {
-                ForEach(categories, id: \..self) { key in
-                    LineMark(
-                        x: .value("Pôle", key),
-                        y: .value("Score brut", rawScores[key] ?? 0)
-                    )
-                    .foregroundStyle(.orange)
-                    .interpolationMethod(.catmullRom)
+                ForEach(letters, id: \.self) { key in
+                    if let pole = poleNames[key] {
+                        LineMark(
+                            x: .value("Pôle", pole),
+                            y: .value("Score brut", rawScores[key] ?? 0)
+                        )
+                        .foregroundStyle(Color.orange)
+                        .interpolationMethod(.catmullRom)
 
-                    LineMark(
-                        x: .value("Pôle", key),
-                        y: .value("Score étalonné", normalizedScores[key] ?? 0)
-                    )
-                    .foregroundStyle(.cyan)
-                    .interpolationMethod(.catmullRom)
+                        LineMark(
+                            x: .value("Pôle", pole),
+                            y: .value("Score étalonné", normalizedScores[key] ?? 0)
+                        )
+                        .foregroundStyle(Color.cyan)
+                        .interpolationMethod(.catmullRom)
+                    }
                 }
             }
             .chartXAxis(.hidden)
@@ -44,33 +55,42 @@ struct RadarChartView: View {
     }
 }
 
-// HorizontalBarChartView.swift
-
+// MARK: - Horizontal Bar Chart View
 struct HorizontalBarChartView: View {
     let rawScores: [String: Int]
     let normalizedScores: [String: Int]
 
-    let categories = ["Réaliste", "Investigateur", "Artiste", "Social", "Entreprenant", "Conventionnel"]
+    let letters = ["R", "I", "A", "S", "E", "C"]
+    let poleNames = [
+        "R": "Réaliste",
+        "I": "Investigateur",
+        "A": "Artistique",
+        "S": "Social",
+        "E": "Entreprenant",
+        "C": "Conventionnel"
+    ]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Radar RIASEC")
+            Text("Diagramme en barres RIASEC")
                 .font(.title3.bold())
                 .padding(.horizontal)
 
             Chart {
-                ForEach(categories, id: \..self) { cat in
-                    BarMark(
-                        x: .value("Brut", rawScores[cat] ?? 0),
-                        y: .value("Catégorie", cat)
-                    )
-                    .foregroundStyle(Color.orange)
+                ForEach(letters, id: \.self) { key in
+                    if let pole = poleNames[key] {
+                        BarMark(
+                            x: .value("Brut", rawScores[key] ?? 0),
+                            y: .value("Catégorie", pole)
+                        )
+                        .foregroundStyle(Color.orange)
 
-                    BarMark(
-                        x: .value("Étalonné", normalizedScores[cat] ?? 0),
-                        y: .value("Catégorie", cat)
-                    )
-                    .foregroundStyle(Color.cyan)
+                        BarMark(
+                            x: .value("Étalonné", normalizedScores[key] ?? 0),
+                            y: .value("Catégorie", pole)
+                        )
+                        .foregroundStyle(Color.cyan)
+                    }
                 }
             }
             .frame(height: 320)
@@ -79,32 +99,67 @@ struct HorizontalBarChartView: View {
     }
 }
 
-// RiasecProfileSummary.swift
-
+// MARK: - RIASEC Profile Summary
 struct RiasecProfileSummary: View {
     let scores: [String: Int]
 
+    let poleNames = [
+        "R": "Réaliste",
+        "I": "Investigateur",
+        "A": "Artistique",
+        "S": "Social",
+        "E": "Entreprenant",
+        "C": "Conventionnel"
+    ]
+
+    let poleColors: [String: Color] = [
+        "R": .orange,
+        "I": .green,
+        "A": .red,
+        "S": .purple,
+        "E": .blue,
+        "C": .yellow
+    ]
+
     var body: some View {
         VStack(spacing: 16) {
-            Text("Profils les plus marqués")
+            Text("Pôles les plus marqués:")
                 .font(.title3.bold())
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal)
 
             let sorted = scores.sorted(by: { $0.value > $1.value })
-            let max = sorted.first?.value ?? 1
+            let percentages = scores.mapValues { Double($0) / 33.0 * 100 }
 
-            ForEach(sorted, id: \..key) { (key, value) in
+            let max = sorted.first?.value ?? 1
+            let min = sorted.last?.value ?? 1
+            let topLetters = sorted.prefix(3).map { $0.key }
+            let bottomLetters = sorted.suffix(2).map { $0.key }
+
+            let values = sorted.map { $0.value }
+            let d1 = Double(values[safe: 0] ?? 0)
+            let d2 = Double(values[safe: 1] ?? 0)
+            let d3 = Double(values[safe: 2] ?? 0)
+            let d4 = Double(values[safe: 3] ?? 0)
+            let d5 = Double(values[safe: 4] ?? 0)
+
+            let differentiation = Int((d1 - ((d2 + d3) / 2.0)) + (d3 - ((d4 + d5) / 2.0)))
+            let convergence = differentiation >= 6 ? "FORTE" : (differentiation >= 3 ? "MOYENNE" : "FAIBLE")
+
+            ForEach(sorted, id: \.key) { (key, value) in
+                let percentage = (Double(value) / 33.0) * 100
                 HStack(spacing: 12) {
                     Circle()
-                        .fill(color(for: key))
+                        .fill(poleColors[key.uppercased()] ?? .gray)
                         .frame(width: 36, height: 36)
                         .overlay(Text(String(key.prefix(1))).font(.headline).foregroundColor(.white))
 
-                    Text(poleName(for: key))
+                    Text("\(poleNames[key.uppercased()] ?? key):")
                         .fontWeight(.semibold)
 
                     Spacer()
 
-                    Text("\(String(format: "%.1f", Double(value) / Double(max) * 100))%")
+                    Text(String(format: "%.1f%%", percentage))
                         .foregroundColor(.secondary)
                 }
                 .padding()
@@ -112,30 +167,22 @@ struct RiasecProfileSummary: View {
                 .cornerRadius(12)
                 .padding(.horizontal)
             }
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text("• pôles moins marqués : \(bottomLetters.map { poleNames[$0] ?? $0 }.joined(separator: " et ").uppercased())")
+                Text("• valeur de différenciation de profil: \(differentiation)")
+                Text("• Valeur de convergence de profil : \(convergence)")
+            }
+            .font(.subheadline)
+            .foregroundColor(.primary)
+            .padding(.horizontal)
         }
     }
+}
 
-    func poleName(for letter: String) -> String {
-        switch letter.uppercased() {
-        case "R": return "Réaliste"
-        case "I": return "Investigateur"
-        case "A": return "Artistique"
-        case "S": return "Social"
-        case "E": return "Entreprenant"
-        case "C": return "Conventionnel"
-        default: return letter
-        }
-    }
-
-    func color(for letter: String) -> Color {
-        switch letter.uppercased() {
-        case "R": return .orange
-        case "I": return .green
-        case "A": return .red
-        case "S": return .purple
-        case "E": return .blue
-        case "C": return .yellow
-        default: return .gray
-        }
+// Safe array index extension
+extension Array {
+    subscript(safe index: Int) -> Element? {
+        return indices.contains(index) ? self[index] : nil
     }
 }

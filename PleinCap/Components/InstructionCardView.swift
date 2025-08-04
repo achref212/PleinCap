@@ -1,10 +1,3 @@
-//
-//  InstructionCardView.swift
-//  PleinCap
-//
-//  Created by chaabani achref on 4/8/2025.
-//
-
 import SwiftUI
 
 struct InstructionCardView: View {
@@ -26,7 +19,8 @@ struct InstructionCardView: View {
         .padding()
         .background(
             RoundedRectangle(cornerRadius: 20)
-                .fill(Color(UIColor.systemBackground))
+                .fill(Color(hex: "#f0f0f0")) // ✅ fond doux légèrement coloré
+                .shadow(color: Color.black.opacity(0.04), radius: 6, x: 0, y: 2)
         )
         .padding(.horizontal)
     }
@@ -35,7 +29,13 @@ struct InstructionCardView: View {
 // Preview
 struct InstructionCardView_Previews: PreviewProvider {
     static var previews: some View {
-        InstructionCardView(text: "Voici une liste d'adjectifs. Choisis 2 adjectifs qui te ressemblent le plus tel(le) que tu es et non pas tel(le) que tu voudrais être.")
-            .previewLayout(.sizeThatFits)
+        Group {
+            InstructionCardView(text: "Voici une liste d'adjectifs. Choisis 2 adjectifs qui te ressemblent le plus tel(le) que tu es et non pas tel(le) que tu voudrais être.")
+                .preferredColorScheme(.light)
+
+            InstructionCardView(text: "Voici une liste d'adjectifs. Choisis 2 adjectifs qui te ressemblent le plus tel(le) que tu es et non pas tel(le) que tu voudrais être.")
+                .preferredColorScheme(.dark)
+        }
+        .previewLayout(.sizeThatFits)
     }
 }
