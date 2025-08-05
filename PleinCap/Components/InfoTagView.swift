@@ -15,10 +15,10 @@ struct InfoTagView: View {
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: icon)
-                .font(.system(size: 15, weight: .medium))
+                .font(.system(size: 13, weight: .medium))
 
             Text(text)
-                .font(.system(size: 15, weight: .semibold))
+                .font(.system(size: 13, weight: .semibold))
         }
         .padding(.horizontal, 5)
         .padding(.vertical, 15)

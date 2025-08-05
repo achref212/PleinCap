@@ -3,7 +3,6 @@
 //  PleinCap
 //
 //  Created by chaabani achref on 4/8/2025.
-//
 
 import SwiftUI
 
@@ -29,135 +28,180 @@ struct SwipeRecommendationsView: View {
             duration: "3 ans",
             isPublic: true,
             domain: "Informatique",
-            imageName: "Etablissement_France1"
-        ),
-        Formation(
-            title: "Bachelor en Marketing",
-            university: "ESG Business School",
-            description: "Métiers du marketing digital et stratégie commerciale.",
-            location: "Marseille, France",
-            price: "6500 € /an",
-            duration: "3 ans",
-            isPublic: false,
-            domain: "Marketing",
-            imageName: "Etablissement_France1"
-        ),
-        Formation(
-            title: "BTS Design Graphique",
-            university: "École de Design de Nantes",
-            description: "Design visuel, création graphique et outils professionnels.",
-            location: "Nantes, France",
-            price: "4500 € /an",
-            duration: "2 ans",
-            isPublic: false,
-            domain: "Design",
-            imageName: "Etablissement_France1"
+            imageName: "Etablissement_France2"
         )
     ]
 
     @State private var currentIndex = 0
 
     var body: some View {
-        ZStack {
-            ForEach(formations.indices.reversed(), id: \.self) { index in
-                if index >= currentIndex {
-                    FormationSwipeCardView(
-                        formation: formations[index],
-                        onRemove: {
-                            withAnimation {
-                                currentIndex += 1
+        VStack(spacing: 16) {
+            HStack {
+                Button(action: {}) {
+                    Image(systemName: "chevron.backward")
+                        .font(.title2)
+                        .padding(12)
+                        .background(Color.white)
+                        .clipShape(Circle())
+                }
+                Spacer()
+            }
+            .padding(.horizontal)
+
+            VStack(spacing: 4) {
+                Text("Recommandations pour Vous")
+                    .font(.title2.bold())
+                    .foregroundColor(Color(hex: "#00B0B1"))
+                Text("Basées sur ton profil et tes centres d'intérêt")
+                    .font(.subheadline)
+                    .foregroundColor(.gray)
+            }
+            .padding(.bottom, 8)
+
+            ZStack {
+                ForEach(formations.indices.reversed(), id: \.self) { index in
+                    if index >= currentIndex {
+                        FormationSwipeCardView(
+                            formation: formations[index],
+                            onRemove: { _ in
+                                withAnimation {
+                                    currentIndex += 1
+                                }
                             }
-                        }
-                    )
-                    .padding()
+                        )
+                        .padding(.horizontal, 20)
+                    }
                 }
             }
+            .padding(.top, 8)
+            .background(
+                CircleBackgroundBottomView()
+                    .frame(maxHeight: .infinity, alignment: .bottom)
+            )
         }
-        .background(Color(.systemGroupedBackground))
+        .padding(.top)
     }
 }
 
 struct FormationSwipeCardView: View {
     let formation: Formation
-    let onRemove: () -> Void
+    let onRemove: (_ direction: SwipeDirection) -> Void
 
     @State private var offset: CGSize = .zero
+    @State private var like: Bool? = nil
 
     var body: some View {
-        ZStack(alignment: .topLeading) {
-            Image(formation.imageName)
-                .resizable()
-                .scaledToFill()
-                .frame(height: 520)
-                .cornerRadius(24)
-                .overlay(
-                    LinearGradient(
-                        gradient: Gradient(colors: [.black.opacity(0.8), .clear]),
-                        startPoint: .bottom,
-                        endPoint: .center
-                    )
-                    .cornerRadius(24)
-                )
-                .shadow(radius: 5)
-                .clipped()
+        ZStack(alignment: .bottom) {
+            VStack(spacing: 0) {
+                ZStack(alignment: .topTrailing) {
+                    ZStack(alignment: .bottom) {
+                        Image(formation.imageName)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 360,height: 220)
+                            .frame(maxWidth: .infinity)
+                            .clipped()
+                            .cornerRadius(20)
 
-            VStack(alignment: .leading, spacing: 8) {
-                Spacer()
-                Text(formation.title)
-                    .font(.title2.bold())
-                    .foregroundColor(.white)
-                Text(formation.university)
-                    .font(.subheadline)
-                    .foregroundColor(.white.opacity(0.85))
-            }
-            .padding()
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(spacing: 8) {
-                    InfoTag(text: formation.location)
-                    InfoTag(text: formation.price)
-                    InfoTag(text: formation.duration)
-                }
-                .padding(.top, 12)
-                .padding(.horizontal)
-                Spacer()
-            }
-
-            VStack {
-                Spacer()
-                HStack {
-                    Spacer()
-                    Text(formation.isPublic ? "Public" : "Privé")
-                        .padding(.horizontal, 24)
-                        .padding(.vertical, 8)
-                        .background(Color.cyan.opacity(0.9))
-                        .clipShape(Capsule())
-                        .overlay(
-                            Capsule().stroke(Color.cyan, lineWidth: 2)
+                        LinearGradient(
+                            gradient: Gradient(colors: [Color.white.opacity(0.9), Color.white.opacity(0)]),
+                            startPoint: .bottom,
+                            endPoint: .top
                         )
-                        .shadow(radius: 2)
+                        .frame(height: 90)
+                        .cornerRadius(20)
+                    }
+
+                    Text(formation.isPublic ? "Public" : "Privé")
+                        .font(.subheadline.bold())
+                        .foregroundColor(.black)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(Color.cyan.opacity(0.7))
+                        .clipShape(Capsule())
                         .padding()
                 }
-            }
-        }
-        .frame(height: 520)
-        .offset(offset)
-        .rotationEffect(.degrees(Double(offset.width / 20)))
-        .gesture(
-            DragGesture()
-                .onChanged { gesture in
-                    self.offset = gesture.translation
-                }
-                .onEnded { gesture in
-                    if abs(gesture.translation.width) > 100 {
-                        onRemove()
-                    } else {
-                        self.offset = .zero
+
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack(spacing: 8) {
+                        InfoTag(text: formation.location)
+                        InfoTag(text: formation.price)
+                        InfoTag(text: formation.duration)
+                    }
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(spacing: 6) {
+                            Rectangle()
+                                .fill(Color.orange)
+                                .frame(width: 4, height: 24)
+                                .cornerRadius(2)
+
+                            Text(formation.title)
+                                .font(.title3.bold())
+                                .foregroundColor(Color(hex: "#1D2B4F"))
+                        }
+
+                        Text(formation.university)
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+
+                        Text(formation.description)
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
                     }
                 }
-        )
+                .padding()
+            }
+            .background(
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(Color.white)
+                    .shadow(radius: 4)
+            )
+            .frame(maxWidth: .infinity)
+            .frame(height: 500)
+            .offset(offset)
+            .rotationEffect(.degrees(Double(offset.width / 40)))
+            .gesture(
+                DragGesture()
+                    .onChanged { gesture in
+                        self.offset = gesture.translation
+                        self.like = gesture.translation.width > 0 ? true : false
+                    }
+                    .onEnded { gesture in
+                        if abs(gesture.translation.width) > 120 {
+                            onRemove(like == true ? .like : .dislike)
+                        } else {
+                            self.offset = .zero
+                            self.like = nil
+                        }
+                    }
+            )
+
+            if let like = like {
+                HStack {
+                    if like {
+                        Image(systemName: "hand.thumbsup.fill")
+                            .font(.system(size: 48))
+                            .foregroundColor(.green)
+                            .padding()
+                        Spacer()
+                    } else {
+                        Spacer()
+                        Image(systemName: "hand.thumbsdown.fill")
+                            .font(.system(size: 48))
+                            .foregroundColor(.red)
+                            .padding()
+                    }
+                }
+                .transition(.opacity)
+            }
+        }
+        .padding(.vertical)
     }
+}
+
+enum SwipeDirection {
+    case like, dislike
 }
 
 struct InfoTag: View {
@@ -177,13 +221,6 @@ struct InfoTag: View {
     }
 }
 
-// MARK: - Preview
-
-struct SwipeRecommendationsView_Previews: PreviewProvider {
-    static var previews: some View {
-        SwipeRecommendationsView()
-            .preferredColorScheme(.light)
-            .previewDevice("iPhone 14 Pro")
-            .previewDisplayName("Recommandations Swipe")
-    }
+#Preview {
+    SwipeRecommendationsView()
 }

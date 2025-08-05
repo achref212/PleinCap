@@ -47,7 +47,7 @@ struct FormationCardView: View {
                 image
                     .resizable()
                     .scaledToFill()
-                    .frame(height: 160)
+                    .frame(width: 360,height: 160)
                     .clipped()
                     .overlay(
                         LinearGradient(
@@ -58,7 +58,7 @@ struct FormationCardView: View {
                     )
                     .cornerRadius(24, corners: [.topLeft, .topRight])
 
-                VStack(alignment: .leading, spacing: 6) {
+                VStack(alignment: .leading, spacing: 9) {
                     HStack(alignment: .top, spacing: 8) {
                         RoundedRectangle(cornerRadius: 2)
                             .fill(Color.orange)
@@ -125,7 +125,7 @@ struct FormationCardView: View {
                 .fill(Color.white)
                 .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
         )
-        .frame(width: 300, height: 340)
+        .frame(width: 360, height: 340)
         .padding(.horizontal, 8)
     }
 }
