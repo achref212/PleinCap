@@ -1,102 +1,86 @@
 import SwiftUI
 
-struct Formation: Identifiable {
+struct ErrorMessage: Identifiable {
     let id = UUID()
-    let title: String
-    let university: String
-    let description: String
-    let location: String
-    let price: String
-    let duration: String
-    let isPublic: Bool
-    let domain: String
-    let imageName: String
+    let message: String
 }
-
 struct FormationsView: View {
-    private let formations: [Formation] = [
-        Formation(
-            title: "Licence en Droit",
-            university: "Université Paris 1 Panthéon-Sorbonne",
-            description: "Formation d'excellence en droit avec une approche pluridisciplinaire.",
-            location: "Paris, France",
-            price: "175 € /année",
-            duration: "3 ans",
-            isPublic: true,
-            domain: "Droits",
-            imageName: "Etablissement_France1"
-        ),
-        Formation(
-            title: "Sciences Humaines et Sociales",
-            university: "Sciences Po Paris",
-            description: "Formation pluridisciplinaire intégrant droit, économie et relations internationales.",
-            location: "Paris, France",
-            price: "175 € /année",
-            duration: "3 ans",
-            isPublic: true,
-            domain: "Sciences Politiques",
-            imageName: "Etablissement_France2"
-        )
-    ]
-
+    @StateObject private var viewModel = FormationViewModel()
+    
     private var groupedFormations: [String: [Formation]] {
-        Dictionary(grouping: formations, by: { $0.domain })
+        Dictionary(grouping: viewModel.formations, by: { $0.typeFormation ?? "Unknown" })
     }
-
+    
+    // Predefined set of 10 random images
+    private let randomImages = [
+        "image1", "image2", "image3", "image4", "image5",
+        "image6", "image7", "image8", "image9", "image10"
+    ]
+    
     var body: some View {
-        ZStack {
-            Color(hex: "#F4F6F8").ignoresSafeArea()
-            CircleBackgroundBottomView()
-
-            VStack(alignment: .leading, spacing: 24) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Recommandations pour Vous")
-                        .font(.title2.bold())
-                        .foregroundColor(Color(hex: "#00B8D9"))
-
-                    Text("Basées sur ton profil et tes centres d'intérêt")
-                        .font(.subheadline)
-                        .foregroundColor(.gray)
-                }
-                .padding(.horizontal)
-                .padding(.top)
-
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 32) {
-                        ForEach(groupedFormations.sorted(by: { $0.key < $1.key }), id: \ .key) { domain, items in
-                            VStack(alignment: .leading, spacing: 16) {
-                                Text(domain)
-                                    .font(.title3.bold())
-                                    .foregroundColor(Color(hex: "#2C4364"))
-                                    .padding(.horizontal)
-
-                                ScrollView(.horizontal, showsIndicators: false) {
-                                    LazyHStack(spacing: 20) {
-                                        ForEach(Array(items.enumerated()), id: \.1.id) { index, formation in
-                                            FormationCardView(
-                                                image: Image(formation.imageName),
-                                                title: formation.title,
-                                                university: formation.university,
-                                                description: formation.description,
-                                                location: formation.location,
-                                                price: formation.price,
-                                                duration: formation.duration,
-                                                isPublic: formation.isPublic
-                                            )
-                                            .frame(width: UIScreen.main.bounds.width * 0.75)
-                                            .padding(.leading, index == 0 ? 16 : 0) // ➕ Marge à gauche uniquement pour le premier
+        NavigationView {
+            ZStack {
+                Color(hex: "#F4F6F8").ignoresSafeArea()
+                CircleBackgroundBottomView()
+                
+                VStack(alignment: .leading, spacing: 24) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Recommandations pour Vous")
+                            .font(.title2.bold())
+                            .foregroundColor(Color(hex: "#00B8D9"))
+                        
+                        Text("Basées sur ton profil et tes centres d'intérêt")
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+                    }
+                    .padding(.horizontal)
+                    .padding(.top)
+                    
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 32) {
+                            ForEach(groupedFormations.sorted(by: { $0.key < $1.key }), id: \.key) { typeFormation, items in
+                                VStack(alignment: .leading, spacing: 16) {
+                                    Text(typeFormation)
+                                        .font(.title3.bold())
+                                        .foregroundColor(Color(hex: "#2C4364"))
+                                        .padding(.horizontal)
+                                    
+                                    ScrollView(.horizontal, showsIndicators: false) {
+                                        LazyHStack(spacing: 20) {
+                                            ForEach(Array(items.enumerated()), id: \.1.id) { index, formation in
+                                                NavigationLink(destination: FormationDetailsView(formationId: formation.id)) {
+                                                    FormationCardView(
+                                                        image: Image(randomImages[index % randomImages.count]), // Random image
+                                                        title: formation.titre,
+                                                        university: formation.etablissement,
+                                                        description: formation.resumeProgramme ?? "No description available",
+                                                        location: formation.lieu?.ville ?? "Unknown location",
+                                                        price: formation.prixAnnuel.map { String(format: "%.2f €", $0) } ?? "N/A",
+                                                        duration: formation.duree ?? "N/A",
+                                                        isPublic: formation.formationControleeParEtat
+                                                    )
+                                                    .frame(width: UIScreen.main.bounds.width * 0.75)
+                                                    .padding(.leading, index == 0 ? 16 : 0)
+                                                }
+                                            }
                                         }
+                                        .padding(.trailing, 20)
                                     }
-                                    .padding(.trailing, 20)
                                 }
                             }
                         }
+                        .padding(.bottom, 32)
                     }
-                    .padding(.bottom, 32)
                 }
             }
+            .navigationBarTitle("Formations", displayMode: .inline)
         }
-        .navigationBarHidden(true)
+        .onAppear {
+            viewModel.fetchFormations()
+        }
+        .alert(item: $viewModel.errorMessage) { error in
+            Alert(title: Text("Error"), message: Text(error.message), dismissButton: .default(Text("OK")))
+        }
     }
 }
 

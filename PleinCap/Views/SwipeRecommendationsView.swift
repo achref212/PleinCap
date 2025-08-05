@@ -7,37 +7,23 @@
 import SwiftUI
 
 struct SwipeRecommendationsView: View {
-    @State private var formations: [Formation] = [
-        Formation(
-            title: "Licence en Droit",
-            university: "Université Paris 1 Panthéon-Sorbonne",
-            description: "Formation pluridisciplinaire intégrant droit, économie et relations internationales.",
-            location: "Paris, France",
-            price: "175 € /année",
-            duration: "3 ans",
-            isPublic: true,
-            domain: "Droit",
-            imageName: "Etablissement_France1"
-        ),
-        Formation(
-            title: "Licence en Informatique",
-            university: "Université de Lyon",
-            description: "Approche pratique des systèmes, programmation et architecture logicielle.",
-            location: "Lyon, France",
-            price: "220 € /année",
-            duration: "3 ans",
-            isPublic: true,
-            domain: "Informatique",
-            imageName: "Etablissement_France2"
-        )
+    @StateObject private var viewModel = FormationViewModel()
+    @State private var currentIndex: Int = 0
+    @State private var randomImages: [String] = [
+        "image1", "image2", "image3", "image4", "image5",
+        "image6", "image7", "image8", "image9", "image10"
     ]
-
-    @State private var currentIndex = 0
-
+    
     var body: some View {
         VStack(spacing: 16) {
             HStack {
-                Button(action: {}) {
+                Button(action: {
+                    withAnimation {
+                        if currentIndex > 0 {
+                            currentIndex -= 1
+                        }
+                    }
+                }) {
                     Image(systemName: "chevron.backward")
                         .font(.title2)
                         .padding(12)
@@ -59,13 +45,22 @@ struct SwipeRecommendationsView: View {
             .padding(.bottom, 8)
 
             ZStack {
-                ForEach(formations.indices.reversed(), id: \.self) { index in
-                    if index >= currentIndex {
+                ForEach(viewModel.formations.indices.reversed(), id: \.self) { index in
+                    if index >= currentIndex && index < viewModel.formations.count {
+                        let formation = viewModel.formations[index]
+                        let randomImageIndex = index % randomImages.count
                         FormationSwipeCardView(
-                            formation: formations[index],
-                            onRemove: { _ in
+                            formation: formation,
+                            imageName: randomImages[randomImageIndex],
+                            onRemove: { direction in
                                 withAnimation {
                                     currentIndex += 1
+                                    // Optional: Handle like/dislike logic (e.g., save preference)
+                                    if direction == .like {
+                                        print("Liked formation: \(formation.titre)")
+                                    } else {
+                                        print("Disliked formation: \(formation.titre)")
+                                    }
                                 }
                             }
                         )
@@ -80,11 +75,18 @@ struct SwipeRecommendationsView: View {
             )
         }
         .padding(.top)
+        .onAppear {
+            viewModel.fetchFormations()
+        }
+        .alert(item: $viewModel.errorMessage) { error in
+            Alert(title: Text("Error"), message: Text(error.message), dismissButton: .default(Text("OK")))
+        }
     }
 }
 
 struct FormationSwipeCardView: View {
     let formation: Formation
+    let imageName: String
     let onRemove: (_ direction: SwipeDirection) -> Void
 
     @State private var offset: CGSize = .zero
@@ -95,10 +97,10 @@ struct FormationSwipeCardView: View {
             VStack(spacing: 0) {
                 ZStack(alignment: .topTrailing) {
                     ZStack(alignment: .bottom) {
-                        Image(formation.imageName)
+                        Image(imageName) // Use the passed imageName
                             .resizable()
                             .scaledToFill()
-                            .frame(width: 360,height: 220)
+                            .frame(width: 360, height: 220)
                             .frame(maxWidth: .infinity)
                             .clipped()
                             .cornerRadius(20)
@@ -112,7 +114,7 @@ struct FormationSwipeCardView: View {
                         .cornerRadius(20)
                     }
 
-                    Text(formation.isPublic ? "Public" : "Privé")
+                    Text(formation.formationControleeParEtat ? "Public" : "Privé")
                         .font(.subheadline.bold())
                         .foregroundColor(.black)
                         .padding(.horizontal, 16)
@@ -124,9 +126,9 @@ struct FormationSwipeCardView: View {
 
                 VStack(alignment: .leading, spacing: 12) {
                     HStack(spacing: 8) {
-                        InfoTag(text: formation.location)
-                        InfoTag(text: formation.price)
-                        InfoTag(text: formation.duration)
+                        InfoTag(text: formation.lieu?.ville ?? "Unknown location")
+                        InfoTag(text: formation.prixAnnuel.map { String(format: "%.2f €", $0) } ?? "N/A")
+                        InfoTag(text: formation.duree ?? "N/A")
                     }
 
                     VStack(alignment: .leading, spacing: 4) {
@@ -136,16 +138,16 @@ struct FormationSwipeCardView: View {
                                 .frame(width: 4, height: 24)
                                 .cornerRadius(2)
 
-                            Text(formation.title)
+                            Text(formation.titre)
                                 .font(.title3.bold())
                                 .foregroundColor(Color(hex: "#1D2B4F"))
                         }
 
-                        Text(formation.university)
+                        Text(formation.etablissement)
                             .font(.subheadline)
                             .foregroundColor(.gray)
 
-                        Text(formation.description)
+                        Text(formation.resumeProgramme ?? "No description available")
                             .font(.subheadline)
                             .foregroundColor(.gray)
                     }
@@ -223,4 +225,5 @@ struct InfoTag: View {
 
 #Preview {
     SwipeRecommendationsView()
+        .environmentObject(FormationViewModel())
 }
