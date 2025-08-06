@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct Academie: Identifiable, Equatable {
+struct Academie11: Identifiable, Equatable {
     let id = UUID()
     let nom: String
     let description: String
@@ -10,11 +10,11 @@ struct SelectAcademieView: View {
     @EnvironmentObject var authVM: AuthViewModel
     @Binding var progress: Double
 
-    @State private var selectedAcademie: Academie? = nil
+    @State private var selectedAcademie1: Academie1? = nil
     @State private var searchText: String = ""
     @State private var goToNext = false
 
-    let academies: [Academie] = [
+    let academies: [Academie1] = [
         .init(nom: "Occitanie", description: "Académie de Toulouse et Montpellier"),
         .init(nom: "Île-de-France", description: "Académies de Paris, Créteil et Versailles"),
         .init(nom: "Auvergne-Rhône-Alpes", description: "Académies de Lyon, Clermont-Ferrand, Grenoble"),
@@ -30,7 +30,7 @@ struct SelectAcademieView: View {
         .init(nom: "Outre-mer", description: "Guadeloupe, Martinique, La Réunion, Guyane, Mayotte")
     ]
 
-    var filteredAcademies: [Academie] {
+    var filteredAcademie1s: [Academie1] {
         if searchText.isEmpty {
             return academies
         } else {
@@ -107,9 +107,9 @@ struct SelectAcademieView: View {
 
                     ScrollView {
                         VStack(spacing: 12) {
-                            ForEach(filteredAcademies) { academie in
+                            ForEach(filteredAcademie1s) { academie in
                                 Button {
-                                    selectedAcademie = academie
+                                    selectedAcademie1 = academie
                                 } label: {
                                     VStack(alignment: .leading, spacing: 4) {
                                         Text(academie.nom)
@@ -124,7 +124,7 @@ struct SelectAcademieView: View {
                                     .frame(maxWidth: .infinity, alignment: .leading)
                                     .background(
                                         RoundedRectangle(cornerRadius: 16)
-                                            .fill(selectedAcademie == academie ? Color(hex: "#E0FBFB") : .white)
+                                            .fill(selectedAcademie1 == academie ? Color(hex: "#E0FBFB") : .white)
                                             .overlay(
                                                 RoundedRectangle(cornerRadius: 16)
                                                     .stroke(Color(hex: "#2EC1C1"), lineWidth: 1)
@@ -152,8 +152,8 @@ struct SelectAcademieView: View {
                 }
 
                 // ✅ Bouton Appliquer
-                PrimaryGradientButton(title: "Appliquer", enabled: selectedAcademie != nil) {
-                    if let acad = selectedAcademie {
+                PrimaryGradientButton(title: "Appliquer", enabled: selectedAcademie1 != nil) {
+                    if let acad = selectedAcademie1 {
                         let newLocation = LocationData(academie: acad.nom)
                         authVM.updateLocation(newLocation) {
                             progress += 0.1

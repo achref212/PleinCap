@@ -14,6 +14,7 @@ struct SelectObjectiveView: View {
     @State private var selectedObjective: String? = nil
     @State private var progress: Double = 0.0
     @State private var goToNext = false
+    @State private var navigateToPreferenceQuestions = false // For conditional navigation
 
     let objectives: [String] = [
         "Je ne sais pas quoi faire après le bac et je veux trouver des idées !",
@@ -34,18 +35,37 @@ struct SelectObjectiveView: View {
                 // ✅ Nouveau bouton dégradé
                 PrimaryGradientButton(title: "Suivant", enabled: selectedObjective != nil) {
                     if let selected = selectedObjective {
-                        authVM.updateUserFields(["objectif": selected]) {
-                            authVM.objectif = selected
-                            goToNext = true
-                        }
-                    }
+                                            authVM.updateUserFields(["objectif": selected]) {
+                                                DispatchQueue.main.async {
+                                                    // Check if there was an error
+                                                    if authVM.errorMessage == nil {
+                                                        authVM.objectif = selected
+                                                        // Set navigation based on selected objective
+                                                        if selected == "J’ai quelques idées de ce que je voudrais faire après le bac" {
+                                                            navigateToPreferenceQuestions = true
+                                                        } else {
+                                                            goToNext = true
+                                                        }
+                                                    } else {
+                                                        print("Failed to update user fields: \(authVM.errorMessage ?? "Unknown error")")
+                                                        // Optionally show an alert here
+                                                    }
+                                                }
+                                            }
+                                        }
                 }
                 .padding(.horizontal)
                 .padding(.bottom)
 
+                // Navigation Links
                 NavigationLink(
                     destination: SelectLevelView(progress: $progress),
                     isActive: $goToNext,
+                    label: { EmptyView() }
+                )
+                NavigationLink(
+                    destination: PreferenceQuestionsView(),
+                    isActive: $navigateToPreferenceQuestions,
                     label: { EmptyView() }
                 )
             }
@@ -57,6 +77,7 @@ struct SelectObjectiveView: View {
             selectedObjective = nil
             progress = 0.0
             goToNext = false
+            navigateToPreferenceQuestions = false
         }
     }
 

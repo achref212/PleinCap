@@ -44,8 +44,13 @@ struct SelectVoieView: View {
 
             PrimaryGradientButton(title: "Suivant", enabled: selectedVoie != nil) {
                 if let voie = selectedVoie {
+                    print("Calling updateUserFields with voie: \(voie)") // Debug
                     authVM.updateUserFields(["voie": voie]) {
-                        goToNext = true
+                        DispatchQueue.main.async {
+                            print("updateUserFields completed") // Debug
+                            authVM.voie = voie // Update local state
+                            goToNext = true
+                        }
                     }
                 }
             }

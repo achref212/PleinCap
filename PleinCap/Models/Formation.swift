@@ -253,3 +253,12 @@ struct Voie: Codable {
         case id, filieres, specialities
     }
 }
+struct Etablissement: Codable, Equatable, Identifiable {
+    let id = UUID()
+    let name: String
+    let description: String
+}
+
+struct Academie: Codable {
+    let name: String
+}

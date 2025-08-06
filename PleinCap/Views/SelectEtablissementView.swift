@@ -1,35 +1,34 @@
 import SwiftUI
 
+
+
+swiftimport SwiftUI
+
 struct Etablissement: Identifiable, Equatable {
     let id = UUID()
     let name: String
     let description: String
+    let academie: String
+    let gpsCoordinates: String
+}
+
+struct LocationData {
+    let etablissement: String
+    let adresse: String
+    let latitude: Double
+    let longitude: Double
+    let academie: String
 }
 
 struct SelectEtablissementView: View {
-    @EnvironmentObject var authVM: AuthViewModel
+    @StateObject private var viewModel = AuthViewModel()
     @Binding var progress: Double
 
     @State private var searchText: String = ""
     @State private var selectedEtablissement: Etablissement? = nil
     @State private var goToNext = false
-
-    private let etablissements: [Etablissement] = [
-        .init(name: "Lycée Jean Monnet", description: "Établissement public à Montpellier"),
-        .init(name: "Lycée Blaise Pascal", description: "Établissement privé à Paris"),
-        .init(name: "Lycée Louis Le Grand", description: "Établissement prestigieux à Paris")
-    ]
-
-    var filteredEtablissements: [Etablissement] {
-        if searchText.isEmpty {
-            return etablissements
-        } else {
-            return etablissements.filter {
-                $0.name.lowercased().contains(searchText.lowercased()) ||
-                $0.description.lowercased().contains(searchText.lowercased())
-            }
-        }
-    }
+    @State private var isLoading = true
+    @State private var errorMessage: String?
 
     var body: some View {
         VStack(spacing: 24) {
@@ -72,18 +71,27 @@ struct SelectEtablissementView: View {
             .padding(.horizontal)
 
             // 🔸 Liste scrollable
-            ScrollView {
-                VStack(spacing: 16) {
-                    ForEach(filteredEtablissements) { etab in
-                        EtablissementRow(etablissement: etab, isSelected: selectedEtablissement == etab)
-                            .onTapGesture {
-                                selectedEtablissement = etab
-                            }
-                            .padding(.horizontal)
+            if isLoading {
+                ProgressView("Chargement des établissements...")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if let errorMessage = errorMessage {
+                Text("Erreur : \(errorMessage)")
+                    .foregroundColor(.red)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                ScrollView {
+                    VStack(spacing: 16) {
+                        ForEach(viewModel.etablissements.filter { $0.name.lowercased().contains(searchText.lowercased()) || $0.description.lowercased().contains(searchText.lowercased()) }) { etab in
+                            EtablissementRow(etablissement: etab, isSelected: selectedEtablissement == etab)
+                                .onTapGesture {
+                                    selectedEtablissement = etab
+                                }
+                                .padding(.horizontal)
+                        }
                     }
+                    .padding(.top, 8)
+                    .padding(.bottom, 80)
                 }
-                .padding(.top, 8)
-                .padding(.bottom, 80)
             }
 
             Spacer()
@@ -95,10 +103,21 @@ struct SelectEtablissementView: View {
 
             PrimaryGradientButton(title: "Appliquer", enabled: selectedEtablissement != nil) {
                 if let etab = selectedEtablissement {
-                    let location = LocationData(etablissement: etab.name)
-                    authVM.updateLocation(location) {
-                        progress += 0.1
-                        goToNext = true
+                    let coordinates = etab.gpsCoordinates.split(separator: ",")
+                    let latitude = Double(coordinates[0].trimmingCharacters(in: .whitespaces)) ?? 0.0
+                    let longitude = Double(coordinates[1].trimmingCharacters(in: .whitespaces)) ?? 0.0
+                    let location = LocationData(
+                        etablissement: etab.name,
+                        adresse: etab.description, // Using description as a proxy for address
+                        latitude: latitude,
+                        longitude: longitude,
+                        academie: etab.academie
+                    )
+                    viewModel.updateLocation(location) {
+                        DispatchQueue.main.async {
+                            progress += 0.1
+                            goToNext = true
+                        }
                     }
                 }
             }
@@ -108,6 +127,21 @@ struct SelectEtablissementView: View {
         .background(Color(UIColor.systemGroupedBackground).ignoresSafeArea())
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
+        .task {
+            await loadEtablissements()
+        }
+    }
+
+    private func loadEtablissements() async {
+        isLoading = true
+        errorMessage = nil
+        do {
+            try await viewModel.fetchFormations()
+            isLoading = false
+        } catch {
+            errorMessage = "Erreur lors du chargement : \(error.localizedDescription)"
+            isLoading = false
+        }
     }
 }
 

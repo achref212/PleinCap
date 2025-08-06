@@ -185,9 +185,19 @@ struct SelectSpecialitesView: View {
                     title: "Suivant",
                     enabled: isValidSelection()
                 ) {
-                    authVM.updateUserFields(["specialites": Array(selectedSpecialites)]) {
-                        onSpecialitesSelected(Array(selectedSpecialites))
-                        goToNext = true
+                    // Combine default specialties with selected specialties
+                    let defaultSpecialties = authVM.specialites ?? []
+                    let combinedSpecialties = Array(Set(defaultSpecialties + Array(selectedSpecialites)))
+                    
+                    print("✅ Combined specialties: \(combinedSpecialties)") // Debug
+                    
+                    authVM.updateUserFields(["specialites": combinedSpecialties]) {
+                        DispatchQueue.main.async {
+                            print("✅ Données utilisateur mises à jour") // Debug
+                            authVM.specialites = combinedSpecialties // Update local state
+                            onSpecialitesSelected(combinedSpecialties)
+                            goToNext = true
+                        }
                     }
                 }
                 .padding(.horizontal)
@@ -217,9 +227,9 @@ struct SelectSpecialitesView_Previews: PreviewProvider {
             NavigationStack {
                 SelectSpecialitesView(
                     progress: $progress,
-                    niveau: "primere",
+                    niveau: "premiere",
                     voie: "GÉNÉRALE",
-                    filiere: ""
+                    filiere: "GÉNÉRALE"
                 ) { _ in }
                 .environmentObject(authVM)
             }

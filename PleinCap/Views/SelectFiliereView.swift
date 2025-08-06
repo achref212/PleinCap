@@ -24,31 +24,24 @@ struct SelectFiliereView: View {
             return niveau.lowercased() == "première" ?
                 ["Droit et économie", "Management", "Sciences de gestion et du numérique"] :
                 ["Droit et économie"]
-
         case "ST2S":
             return niveau.lowercased() == "première" ?
                 ["Physique chimie pour la santé", "Biologie et physiopathologie humaines", "Sciences et techniques sanitaires et sociales"] :
                 ["Sciences et techniques sanitaires et sociales", "Chimie, biologie et physiopathologie humaines"]
-
         case "STHR":
             return ["Économie et gestion hôtelière", "Sciences et technologies culinaires"]
-
         case "STD2A":
             return niveau.lowercased() == "première" ?
                 ["Physique-chimie", "Outils et langages numériques", "Design et métiers d’art"] :
                 ["Analyse et méthodes en design", "Conception et création en design et métiers d’art"]
-
         case "STAV":
             return niveau.lowercased() == "première" ?
                 ["Gestion des ressources et de l'alimentation", "Territoires et sociétés"] :
                 ["Gestion des ressources et de l'alimentation"]
-
         case "S2TMD":
             return ["Économie, droit et environnement du spectacle vivant"]
-
         case "STL":
             return ["Biotechnologies", "Sciences physiques et chimiques en laboratoire"]
-
         default:
             return []
         }
@@ -110,23 +103,26 @@ struct SelectFiliereView: View {
 
                     let specialitesList = defaultSpecialites
 
-                    // 1️⃣ Stockage pour l'utilisateur
+                    // 1️⃣ Update filiere and specialites
                     authVM.updateUserFields([
                         "filiere": filiere,
-                        "specialites": specialitesList
+                        "specialites": specialitesList // JSON-compatible array
                     ]) {
-                        print("✅ Données utilisateur mises à jour")
+                        DispatchQueue.main.async {
+                            print("✅ Données utilisateur mises à jour (filiere et specialites)")
+                            authVM.filiere = filiere
+                            authVM.specialites = specialitesList // Update local state
 
-                        // 2️⃣ Stockage pour la moyenne
-                        authVM.specialty = specialitesList
-                        authVM.submitMoyenne {
-                            print("✅ Données moyenne mises à jour")
-
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                if filieresAvecChoix.contains(filiere.uppercased()) {
-                                    goToSpecialites = true
-                                } else {
-                                    goToEtablissement = true
+                            // 2️⃣ Submit moyenne if needed
+                            authVM.submitMoyenne {
+                                DispatchQueue.main.async {
+                                    print("✅ Données moyenne mises à jour")
+                                    // Determine navigation based on filiere
+                                    if filieresAvecChoix.contains(filiere.uppercased()) {
+                                        goToSpecialites = true
+                                    } else {
+                                        goToEtablissement = true
+                                    }
                                 }
                             }
                         }
