@@ -6,20 +6,18 @@
 //
 
 // Models.swift
-// Models.swift
 import Foundation
 
-// Main Formation struct
-struct Formation: Identifiable, Codable {
+struct Formation: Codable, Identifiable {
     let id: Int
     let timestamp: String
     let url: String
     let titre: String
     let etablissement: String
-    let typeFormation: String
-    let typeEtablissement: String
-    let formationControleeParEtat: Bool
-    let apprentissage: String?
+    let typeFormation: String? // type_formation
+    let typeEtablissement: String? // type_etablissement
+    let formationControleeParEtat: Bool?
+    let apprentissage: String? // "Oui" or "Non"
     let prixAnnuel: Double?
     let salaireMoyen: Double?
     let poursuiteEtudes: String?
@@ -36,141 +34,67 @@ struct Formation: Identifiable, Codable {
     let totalAdmittedCount: Int?
     let complementaryPhaseAcceptancePercentage: Double?
     let tauxReussite3_4Ans: String?
-    
     let lieu: Lieu?
     let salaireBornes: SalaireBornes?
     let badges: [Badge]?
-    let filieresBac: [FiliereBac]?
-    let specialitesFavorisees: [SpecialiteFavorisee]?
-    let matieresEnseignees: [MatiereEnseignee]?
-    let debouchesMetiers: [DeboucheMetier]?
-    let debouchesSecteurs: [DeboucheSecteur]?
+    let filieresBac: [String]?
+    let specialitesFavorisees: [String]?
+    let matieresEnseignees: [String]?
+    let debouchesMetiers: [String]?
+    let debouchesSecteurs: [String]?
     let tsTauxParBac: [TsTauxParBac]?
-    let intervallesAdmis: [IntervalsAdmis]?
-    let criteresCandidature: [CriteresCandidature]?
+    let intervallesAdmis: [IntervallesAdmis]?
+    let criteresCandidature: [CritereCandidature]?
     let boursiers: Boursiers?
-    let profilsAdmis: [ProfilsAdmis]?
+    let profilsAdmis: [ProfilAdmis]?
     let promoCharacteristics: PromoCharacteristics?
     let postFormationOutcomes: PostFormationOutcomes?
     let voieGenerale: Voie?
     let voiePro: Voie?
     let voieTechnologique: Voie?
 
+    // Ensure camelCase to snake_case mapping
     enum CodingKeys: String, CodingKey {
-        case id, timestamp, url, titre, etablissement
-        case typeFormation = "type_formation"
-        case typeEtablissement = "type_etablissement"
-        case formationControleeParEtat = "formation_controlee_par_etat"
-        case apprentissage
-        case prixAnnuel = "prix_annuel"
-        case salaireMoyen = "salaire_moyen"
-        case poursuiteEtudes = "poursuite_etudes"
-        case tauxInsertion = "taux_insertion"
-        case lienOnisep = "lien_onisep"
-        case resumeProgramme = "resume_programme"
-        case duree
-        case formationSelective = "formation_selective"
-        case tauxPassage2eAnnee = "taux_passage_2e_annee"
-        case accesFormation = "acces_formation"
-        case preBacAdmissionPercentage = "pre_bac_admission_percentage"
-        case femalePercentage = "female_percentage"
-        case newBacStudentsCount = "new_bac_students_count"
-        case totalAdmittedCount = "total_admitted_count"
-        case complementaryPhaseAcceptancePercentage = "complementary_phase_acceptance_percentage"
-        case tauxReussite3_4Ans = "taux_reussite_3_4_ans"
-        case lieu
-        case salaireBornes = "salaire_bornes"
-        case badges
-        case filieresBac = "filieres_bac"
-        case specialitesFavorisees = "specialites_favorisees"
-        case matieresEnseignees = "matieres_enseignees"
-        case debouchesMetiers = "debouches_metiers"
-        case debouchesSecteurs = "debouches_secteurs"
-        case tsTauxParBac = "ts_taux_par_bac"
-        case intervallesAdmis = "intervalles_admis"
-        case criteresCandidature = "criteres_candidature"
-        case boursiers
-        case profilsAdmis = "profils_admis"
-        case promoCharacteristics = "promo_characteristics"
-        case postFormationOutcomes = "post_formation_outcomes"
-        case voieGenerale = "voie_generale"
-        case voiePro = "voie_pro"
-        case voieTechnologique = "voie_technologique"
+        case id, timestamp, url, titre, etablissement, typeFormation = "type_formation", typeEtablissement = "type_etablissement", formationControleeParEtat = "formation_controlee_par_etat", apprentissage, prixAnnuel = "prix_annuel", salaireMoyen = "salaire_moyen", poursuiteEtudes = "poursuite_etudes", tauxInsertion = "taux_insertion", lienOnisep = "lien_onisep", resumeProgramme = "resume_programme", duree, formationSelective = "formation_selective", tauxPassage2eAnnee = "taux_passage_2e_annee", accesFormation = "acces_formation", preBacAdmissionPercentage = "pre_bac_admission_percentage", femalePercentage = "female_percentage", newBacStudentsCount = "new_bac_students_count", totalAdmittedCount = "total_admitted_count", complementaryPhaseAcceptancePercentage = "complementary_phase_acceptance_percentage", tauxReussite3_4Ans = "taux_reussite_3_4_ans", lieu, salaireBornes = "salaire_bornes", badges, filieresBac = "filieres_bac", specialitesFavorisees = "specialites_favorisees", matieresEnseignees = "matieres_enseignees", debouchesMetiers = "debouches_metiers", debouchesSecteurs = "debouches_secteurs", tsTauxParBac = "ts_taux_par_bac", intervallesAdmis = "intervalles_admis", criteresCandidature = "criteres_candidature", boursiers, profilsAdmis = "profils_admis", promoCharacteristics = "promo_characteristics", postFormationOutcomes = "post_formation_outcomes", voieGenerale = "voie_generale", voiePro = "voie_pro", voieTechnologique = "voie_technologique"
     }
 }
-
-// Nested structs
+struct Badge: Codable {
+    let badge: String
+}
 struct Lieu: Codable {
-    let id: Int
-    let ville: String
-    let region: String
-    let departement: String
-    let academy: String
-    let gpsCoordinates: String
+    let ville: String?
+    let region: String?
+    let departement: String?
+    let academy: String?
+    let gpsCoordinates: String? // "lat, lon" format
 
     enum CodingKeys: String, CodingKey {
-        case id, ville, region, departement, academy
-        case gpsCoordinates = "gps_coordinates"
+        case ville, region, departement, academy, gpsCoordinates = "gps_coordinates"
     }
 }
 
 struct SalaireBornes: Codable {
-    let id: Int
-    let min: Double
-    let max: Double
-}
-
-struct Badge: Codable {
-    let id: Int
-    let badge: String
-}
-
-struct FiliereBac: Codable {
-    let id: Int
-    let filiere: String
-}
-
-struct SpecialiteFavorisee: Codable {
-    let id: Int
-    let specialite: String
-}
-
-struct MatiereEnseignee: Codable {
-    let id: Int
-    let matiere: String
-}
-
-struct DeboucheMetier: Codable {
-    let id: Int
-    let metier: String
-}
-
-struct DeboucheSecteur: Codable {
-    let id: Int
-    let secteur: String
+    let min: Double?
+    let max: Double?
 }
 
 struct TsTauxParBac: Codable {
-    let id: Int
-    let bacType: String
-    let taux: String
+    let bacType: String? // e.g., "TS Tle système français G"
+    let taux: String?
 
     enum CodingKeys: String, CodingKey {
-        case id
         case bacType = "bac_type"
         case taux
     }
 }
 
-struct IntervalsAdmis: Codable {
-    let id: Int
-    let intervalType: String
-    let tleGenerale: String
-    let tleTechno: String
-    let tlePro: String
+struct IntervallesAdmis: Codable {
+    let intervalType: String?
+    let tleGenerale: String?
+    let tleTechno: String?
+    let tlePro: String?
 
     enum CodingKeys: String, CodingKey {
-        case id
         case intervalType = "interval_type"
         case tleGenerale = "tle_generale"
         case tleTechno = "tle_techno"
@@ -178,52 +102,48 @@ struct IntervalsAdmis: Codable {
     }
 }
 
-struct SousCritere: Codable {
-    let id: Int
-    let type: String
-    let titre: String
-    let description: String
+struct CritereCandidature: Codable {
+    let categorie: String?
+    let poids: Double?
+    let sousCriteres: [SousCritere]?
+
+    enum CodingKeys: String, CodingKey {
+        case categorie, poids, sousCriteres = "sous_criteres"
+    }
 }
 
-struct CriteresCandidature: Codable {
-    let id: Int
-    let categorie: String
-    let poids: Double
-    let sousCriteres: [SousCritere]
+struct SousCritere: Codable {
+    let type: String?
+    let titre: String?
+    let description: String?
 }
 
 struct Boursiers: Codable {
-    let id: Int
-    let tauxMinimumBoursiers: String
-    let pourcentageBoursiersNeoBacheliers: Double
+    let tauxMinimumBoursiers: String?
+    let pourcentageBoursiersNeoBacheliers: Double?
 
     enum CodingKeys: String, CodingKey {
-        case id
         case tauxMinimumBoursiers = "taux_minimum_boursiers"
         case pourcentageBoursiersNeoBacheliers = "pourcentage_boursiers_neo_bacheliers"
     }
 }
 
-struct ProfilsAdmis: Codable {
-    let id: Int
-    let bacType: String
-    let percentage: Double
+struct ProfilAdmis: Codable {
+    let bacType: String?
+    let percentage: Double?
 
     enum CodingKeys: String, CodingKey {
-        case id
         case bacType = "bac_type"
         case percentage
     }
 }
 
 struct PromoCharacteristics: Codable {
-    let id: Int
-    let newBacStudentsCount: Int
-    let femalePercentage: Double
-    let totalAdmittedCount: Int
+    let newBacStudentsCount: Int?
+    let femalePercentage: Double?
+    let totalAdmittedCount: Int?
 
     enum CodingKeys: String, CodingKey {
-        case id
         case newBacStudentsCount = "new_bac_students_count"
         case femalePercentage = "female_percentage"
         case totalAdmittedCount = "total_admitted_count"
@@ -231,13 +151,11 @@ struct PromoCharacteristics: Codable {
 }
 
 struct PostFormationOutcomes: Codable {
-    let id: Int
-    let poursuiventEtudes: String
-    let enEmploi: String
-    let autreSituation: String
+    let poursuiventEtudes: String?
+    let enEmploi: String?
+    let autreSituation: String?
 
     enum CodingKeys: String, CodingKey {
-        case id
         case poursuiventEtudes = "poursuivent_etudes"
         case enEmploi = "en_emploi"
         case autreSituation = "autre_situation"
@@ -245,20 +163,28 @@ struct PostFormationOutcomes: Codable {
 }
 
 struct Voie: Codable {
-    let id: Int
-    let filieres: String
-    let specialities: String
+    let filieres: [String]?
+    let specialities: [String]?
 
     enum CodingKeys: String, CodingKey {
-        case id, filieres, specialities
+        case filieres, specialities
     }
-}
-struct Etablissement: Codable, Equatable, Identifiable {
-    let id = UUID()
-    let name: String
-    let description: String
-}
 
-struct Academie: Codable {
-    let name: String
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        if let filieresString = try? container.decode(String.self, forKey: .filieres),
+           let filieresData = filieresString.data(using: .utf8) {
+            self.filieres = try? JSONDecoder().decode([String].self, from: filieresData)
+        } else {
+            self.filieres = nil
+        }
+
+        if let specialitiesString = try? container.decode(String.self, forKey: .specialities),
+           let specialitiesData = specialitiesString.data(using: .utf8) {
+            self.specialities = try? JSONDecoder().decode([String].self, from: specialitiesData)
+        } else {
+            self.specialities = nil
+        }
+    }
 }

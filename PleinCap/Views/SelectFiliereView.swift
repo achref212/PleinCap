@@ -100,28 +100,28 @@ struct SelectFiliereView: View {
                     guard let filiere = selectedFiliere else { return }
 
                     print("✅ Filière sélectionnée : \(filiere)")
-
                     let specialitesList = defaultSpecialites
 
-                    // 1️⃣ Update filiere and specialites
                     authVM.updateUserFields([
                         "filiere": filiere,
-                        "specialites": specialitesList // JSON-compatible array
+                        "specialites": specialitesList
                     ]) {
                         DispatchQueue.main.async {
                             print("✅ Données utilisateur mises à jour (filiere et specialites)")
                             authVM.filiere = filiere
-                            authVM.specialites = specialitesList // Update local state
+                            authVM.specialites = specialitesList
 
-                            // 2️⃣ Submit moyenne if needed
                             authVM.submitMoyenne {
-                                DispatchQueue.main.async {
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                                     print("✅ Données moyenne mises à jour")
-                                    // Determine navigation based on filiere
-                                    if filieresAvecChoix.contains(filiere.uppercased()) {
-                                        goToSpecialites = true
-                                    } else {
-                                        goToEtablissement = true
+                                    
+                                    // ✅ Navigation déclenchée proprement après update
+                                    withAnimation {
+                                        if filieresAvecChoix.contains(filiere.uppercased()) {
+                                            goToSpecialites = true
+                                        } else {
+                                            goToEtablissement = true
+                                        }
                                     }
                                 }
                             }

@@ -17,7 +17,9 @@ class FormationViewModel: ObservableObject {
     
     private var cancellables = Set<AnyCancellable>()
     private let networkService = NetworkService.shared
-
+    var uniqueEtablissements: [String] {
+            Array(Set(formations.map { $0.etablissement })).sorted()
+        }
     func fetchFormations(skip: Int = 0, limit: Int = 10) {
         isLoading = true
         errorMessage = nil

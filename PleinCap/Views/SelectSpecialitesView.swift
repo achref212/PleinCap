@@ -185,18 +185,20 @@ struct SelectSpecialitesView: View {
                     title: "Suivant",
                     enabled: isValidSelection()
                 ) {
-                    // Combine default specialties with selected specialties
                     let defaultSpecialties = authVM.specialites ?? []
                     let combinedSpecialties = Array(Set(defaultSpecialties + Array(selectedSpecialites)))
                     
-                    print("✅ Combined specialties: \(combinedSpecialties)") // Debug
-                    
+                    print("✅ Combined specialties: \(combinedSpecialties)")
+
                     authVM.updateUserFields(["specialites": combinedSpecialties]) {
-                        DispatchQueue.main.async {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                             print("✅ Données utilisateur mises à jour") // Debug
                             authVM.specialites = combinedSpecialties // Update local state
                             onSpecialitesSelected(combinedSpecialties)
-                            goToNext = true
+
+                            withAnimation {
+                                goToNext = true
+                            }
                         }
                     }
                 }

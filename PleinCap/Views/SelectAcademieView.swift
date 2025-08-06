@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct Academie11: Identifiable, Equatable {
+struct Academie1: Identifiable, Equatable {
     let id = UUID()
     let nom: String
     let description: String

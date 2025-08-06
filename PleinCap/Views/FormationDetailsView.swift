@@ -29,7 +29,7 @@ struct FormationDetailsView: View {
 
                             HStack(spacing: 8) {
                                 TagView(text: "contrôlée par l’État")
-                                TagView(text: formation.formationControleeParEtat ? "Public" : "Privé")
+                                TagView(text: formation.formationControleeParEtat ?? false ? "Public" : "Privé")
                             }
                         }
                         .padding()
@@ -67,9 +67,9 @@ struct FormationDetailsView: View {
 
                             VStack(alignment: .leading, spacing: 8) {
                                 InfoRow(title: "Résumé du programme", value: formation.resumeProgramme ?? "N/A")
-                                InfoRow(title: "Débouchés pro", value: formation.debouchesMetiers?.map { $0.metier }.joined(separator: ", ") ?? "N/A")
+                                InfoRow(title: "Débouchés pro", value: formation.debouchesMetiers?.joined(separator: ", ") ?? "N/A")
                                 InfoRow(title: "Débouchés études", value: formation.poursuiteEtudes ?? "N/A")
-                                InfoRow(title: "Débouchés domaines / secteurs", value: formation.debouchesSecteurs?.map { $0.secteur }.joined(separator: ", ") ?? "N/A")
+                                InfoRow(title: "Débouchés domaines / secteurs", value: formation.debouchesSecteurs?.joined(separator: ", ") ?? "N/A")
                             }
                         }
                     }

@@ -35,10 +35,12 @@ struct FormationCardView: View {
     let university: String
     let description: String
     let location: String
-    let price: String
+    let price: Double
     let duration: String
     let isPublic: Bool
-
+    var priceFormatted: String {
+        String(format: "%.0f € /année", price)
+    }
     @State private var isLiked = false
 
     var body: some View {
@@ -47,7 +49,7 @@ struct FormationCardView: View {
                 image
                     .resizable()
                     .scaledToFill()
-                    .frame(width: 360,height: 160)
+                    .frame(width: 330,height: 160)
                     .clipped()
                     .overlay(
                         LinearGradient(
@@ -111,7 +113,7 @@ struct FormationCardView: View {
 
                 HStack(spacing: 10) {
                     InfoTagView(icon: "mappin.and.ellipse", text: location)
-                    InfoTagView(icon: "eurosign.circle", text: price)
+                    InfoTagView(icon: "eurosign.circle",  text: priceFormatted)
                     InfoTagView(icon: "clock", text: duration)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -125,8 +127,8 @@ struct FormationCardView: View {
                 .fill(Color.white)
                 .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
         )
-        .frame(width: 360, height: 340)
-        .padding(.horizontal, 8)
+        .frame(width: 340, height: 340)
+        .padding(.horizontal, 21)
     }
 }
 
@@ -141,7 +143,7 @@ struct FormationCardView_Previews: PreviewProvider {
                     university: "Université Paris 1 Panthéon-Sorbonne",
                     description: "Formation d'excellence en droit avec une approche pluridisciplinaire.",
                     location: "Paris, France",
-                    price: "175 € /année",
+                    price: 175,
                     duration: "3 ans",
                     isPublic: true
                 )
@@ -152,7 +154,7 @@ struct FormationCardView_Previews: PreviewProvider {
                     university: "Sciences Po Paris",
                     description: "Formation pluridisciplinaire intégrant droit, économie et relations internationales.",
                     location: "Paris, France",
-                    price: "175 € /année",
+                    price: 175 ,
                     duration: "3 ans",
                     isPublic: true
                 )

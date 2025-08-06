@@ -35,24 +35,28 @@ struct SelectObjectiveView: View {
                 // ✅ Nouveau bouton dégradé
                 PrimaryGradientButton(title: "Suivant", enabled: selectedObjective != nil) {
                     if let selected = selectedObjective {
-                                            authVM.updateUserFields(["objectif": selected]) {
-                                                DispatchQueue.main.async {
-                                                    // Check if there was an error
-                                                    if authVM.errorMessage == nil {
-                                                        authVM.objectif = selected
-                                                        // Set navigation based on selected objective
-                                                        if selected == "J’ai quelques idées de ce que je voudrais faire après le bac" {
-                                                            navigateToPreferenceQuestions = true
-                                                        } else {
-                                                            goToNext = true
-                                                        }
-                                                    } else {
-                                                        print("Failed to update user fields: \(authVM.errorMessage ?? "Unknown error")")
-                                                        // Optionally show an alert here
-                                                    }
-                                                }
+                        authVM.updateUserFields(["objectif": selected]) {
+                            DispatchQueue.main.async {
+                                if authVM.errorMessage == nil {
+                                    authVM.objectif = selected
+
+                                    // 🔁 Synchronisation propre pour SwiftUI
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                        withAnimation {
+                                            if selected == "J’ai quelques idées de ce que je voudrais faire après le bac" {
+                                                navigateToPreferenceQuestions = true
+                                            } else {
+                                                goToNext = true
                                             }
                                         }
+                                    }
+
+                                } else {
+                                    print("Failed to update user fields: \(authVM.errorMessage ?? "Unknown error")")
+                                }
+                            }
+                        }
+                    }
                 }
                 .padding(.horizontal)
                 .padding(.bottom)

@@ -89,9 +89,13 @@ struct SelectLevelView: View {
                 authVM.updateUserFields(["niveau_scolaire": level]) {
                     DispatchQueue.main.async {
                         print("updateUserFields completed") // Debug
-                        // Update local state directly on authVM
-                      
-                        goToOptions = true
+
+                        // 🔁 Synchronisation propre pour navigation SwiftUI
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            withAnimation {
+                                goToOptions = true
+                            }
+                        }
                     }
                 }
             }

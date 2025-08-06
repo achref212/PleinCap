@@ -114,7 +114,7 @@ struct FormationSwipeCardView: View {
                         .cornerRadius(20)
                     }
 
-                    Text(formation.formationControleeParEtat ? "Public" : "Privé")
+                    Text(formation.formationControleeParEtat ?? false ? "Public" : "Privé")
                         .font(.subheadline.bold())
                         .foregroundColor(.black)
                         .padding(.horizontal, 16)
