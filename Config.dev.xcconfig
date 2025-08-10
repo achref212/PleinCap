@@ -1,0 +1,10 @@
+//
+//  Config.dev.xcconfig
+//  PleinCap
+//
+//  Created by chaabani achref on 10/8/2025.
+//
+
+// Configuration settings file format documentation can be found at:
+// https://developer.apple.com/documentation/xcode/adding-a-build-configuration-file-to-your-project
+GEMINI_API_KEY = AIzaSyDFtG36Rt2IpccFIkdsGrtcnYNwwARZeXY

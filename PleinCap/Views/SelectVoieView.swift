@@ -1,132 +1,169 @@
 import SwiftUI
 
 struct SelectVoieView: View {
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-    @EnvironmentObject var authVM: AuthViewModel
-
     @Binding var progress: Double
     let niveau: String
 
-    @State private var selectedVoie: String? = nil
-    @State private var goToNext = false
+    @EnvironmentObject var authVM: AuthViewModel1
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
-    let filieres = ["Générale", "Technologique", "Professionnelle"]
+    @State private var selectedVoie: String? = nil
+    @State private var goToSpecialitesGeneral = false
+    @State private var goToFiliereTech = false
+    @State private var isSaving = false
+
+    private let voies: [(title: String, subtitle: String)] = [
+        ("Générale", "Baccalauréat général avec choix de spécialités."),
+        ("Technologique", "Baccalauréat technologique avec choix d’une filière.")
+    ]
 
     var body: some View {
-        VStack(spacing: 0) {
-            ScrollView {
-                VStack(spacing: 24) {
-                    ProgressBarView(progress: $progress)
-                        .padding(.top)
+        ScrollView {
+            VStack(spacing: 24) {
+                // Progress
+                ProgressBarView(progress: $progress)
+                    .padding(.top)
 
-                    ImageWithCaptionView(imageName: "GTPro", caption: "Voie")
+                ImageWithCaptionView(imageName: "GTPro", caption: "Ta voie")
 
-                    HStack(alignment: .top, spacing: 8) {
-                        Rectangle()
-                            .fill(Color.orange)
-                            .frame(width: 4)
-                            .cornerRadius(2)
+                header
+                cardsSection
+                buttonSection
 
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Quelle est ta filière actuelle ?")
-                                .font(dynamicTypeSize.isAccessibilitySize ? .body : .subheadline)
-                                .foregroundColor(.secondary)
-                        }
-                        Spacer()
-                    }
-                    .padding(.horizontal)
+                // Navigation branches (hidden links)
+                NavigationLink(
+                    destination: SelectSpecialitesView(
+                        progress: $progress,
+                        niveau: niveau,
+                        voie: "Générale",
+                        filiere: nil
+                    ) { _ in }
+                    .environmentObject(authVM),
+                    isActive: $goToSpecialitesGeneral,
+                    label: { EmptyView() }
+                )
+                .hidden()
 
-                    voieSelectionSection
-                    Spacer(minLength: 20)
-                }
-                .padding(.bottom, 24)
+                NavigationLink(
+                    destination: SelectFiliereView(
+                        progress: $progress,
+                        niveau: niveau
+                    ).environmentObject(authVM),
+                    isActive: $goToFiliereTech,
+                    label: { EmptyView() }
+                )
+                .hidden()
             }
-
-            PrimaryGradientButton(title: "Suivant", enabled: selectedVoie != nil) {
-                if let voie = selectedVoie {
-                    print("Calling updateUserFields with voie: \(voie)")
-                    goToNext = true
-
-                    authVM.updateUserFields(["voie": voie]) {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) {
-                            print("updateUserFields completed")
-                            authVM.voie = voie
-                            withAnimation {
-                            }
-                        }
-                    }
-                }
-            }
-            .padding(.horizontal)
-            .padding(.bottom, 12)
-
-            // ✅ Ajout du NavigationLink déclenché
-            NavigationLink(
-                destination: nextDestinationView(),
-                isActive: $goToNext,
-                label: { EmptyView() }
-            )
+            .padding(.bottom, 20)
         }
         .background(Color(UIColor.systemGroupedBackground))
-        .navigationTitle("")
+        .navigationTitle("Choix de la voie")
         .navigationBarTitleDisplayMode(.inline)
-        .onAppear {
-            selectedVoie = nil
+        .onAppear { preloadSelection() }
+        .alert(item: $authVM.errorMessage) { err in
+            Alert(title: Text("Erreur"),
+                  message: Text(err.message),
+                  dismissButton: .default(Text("OK")))
         }
     }
 
-    // ✅ Vue de destination dynamique
-    @ViewBuilder
-    private func nextDestinationView() -> some View {
-        if selectedVoie == "Générale" {
-            SelectSpecialitesView(progress: $progress, niveau: niveau, voie: "Générale", filiere: nil) { _ in }
-        } else if selectedVoie == "Technologique" {
-            SelectFiliereView(progress: $progress, niveau: niveau)
-        } else {
-            Text("Cette filière n’est pas encore disponible.")
+    // MARK: - Subviews
+
+    private var header: some View {
+        HStack(alignment: .top, spacing: 8) {
+            Rectangle()
+                .fill(Color.orange)
+                .frame(width: 4)
+                .cornerRadius(2)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Choisis ta voie")
+                    .font(dynamicTypeSize.isAccessibilitySize ? .title2.bold() : .title3.bold())
+                    .foregroundColor(Color(hex: "#2C4364"))
+
+                Text("Cela déterminera la suite des choix (filière ou spécialités).")
+                    .font(dynamicTypeSize.isAccessibilitySize ? .body : .subheadline)
+                    .foregroundColor(.secondary)
+            }
+            Spacer()
         }
+        .padding(.horizontal)
     }
 
-    private var voieSelectionSection: some View {
+    private var cardsSection: some View {
         VStack(spacing: 16) {
-            ForEach(filieres, id: \.self) { filiere in
-                voieCard(for: filiere)
+            ForEach(voies, id: \.title) { voie in
+                SelectableCardView(
+                    title: voie.title,
+                    subtitle: voie.subtitle,
+                    isSelected: selectedVoie == voie.title
+                )
+                .onTapGesture {
+                    withAnimation {
+                        if selectedVoie == nil { progress = min(progress + 0.1, 1.0) }
+                        selectedVoie = voie.title
+                    }
+                }
             }
         }
         .padding(.horizontal)
     }
 
-    private func voieCard(for filiere: String) -> some View {
-        VStack(spacing: 4) {
-            let isDisabled = filiere == "Professionnelle"
-            SelectableCardV2View(
-                title: filiere,
-                isSelected: selectedVoie == filiere,
-                disabled: isDisabled
-            )
-            .opacity(isDisabled ? 0.5 : 1.0)
-            .onTapGesture {
-                guard !isDisabled else { return }
-                if selectedVoie == nil {
-                    progress = min(progress + 0.1, 1.0)
-                }
-                selectedVoie = filiere
-            }
+    private var buttonSection: some View {
+        PrimaryGradientButton(
+            title: isSaving ? "Enregistrement..." : "Suivant",
+            enabled: selectedVoie != nil && !isSaving
+        ) {
+            saveAndNavigate()
+        }
+        .padding(.horizontal)
+        .padding(.bottom, 10)
+    }
 
-            if isDisabled {
-                Text("Bientôt disponible")
-                    .font(.caption.weight(.medium))
-                    .foregroundColor(.gray)
-                    .padding(.top, 2)
+    // MARK: - Actions
+
+    private func preloadSelection() {
+        // Pré-sélectionne si déjà enregistré (UX sympa)
+        if let existing = authVM.voie, !existing.isEmpty {
+            selectedVoie = existing
+            progress = max(progress, 0.4)
+        } else {
+            progress = max(progress, 0.3)
+        }
+        goToSpecialitesGeneral = false
+        goToFiliereTech = false
+    }
+
+    private func saveAndNavigate() {
+        guard let choice = selectedVoie else { return }
+        isSaving = true
+
+        authVM.updateUserFields(["voie": choice]) { result in
+            isSaving = false
+            switch result {
+            case .success:
+                authVM.voie = choice
+                withAnimation {
+                    progress = max(progress, 0.45)
+                    if choice == "Générale" {
+                        goToSpecialitesGeneral = true
+                    } else { // Technologique
+                        goToFiliereTech = true
+                    }
+                }
+            case .failure(let error):
+                authVM.errorMessage = ErrorMessage(message: "Erreur mise à jour : \(error.localizedDescription)")
             }
         }
     }
 }
 
+// MARK: - Preview
+
 struct SelectVoieView_Previews: PreviewProvider {
-    struct Wrapper: View {
-        @State private var progress: Double = 0.3
-        @StateObject var authVM = AuthViewModel()
+    struct PreviewWrapper: View {
+        @State private var progress: Double = 0.35
+        @StateObject private var authVM = AuthViewModel1()
 
         var body: some View {
             NavigationStack {
@@ -138,8 +175,11 @@ struct SelectVoieView_Previews: PreviewProvider {
 
     static var previews: some View {
         Group {
-            Wrapper().preferredColorScheme(.light)
-            Wrapper().preferredColorScheme(.dark)
+            PreviewWrapper()
+                .preferredColorScheme(.light)
+
+            PreviewWrapper()
+                .preferredColorScheme(.dark)
                 .environment(\.dynamicTypeSize, .accessibility3)
         }
     }

@@ -2,7 +2,7 @@ import SwiftUI
 
 struct AuthContainer: View {
     @Binding var flow: AuthFlowStep
-    @ObservedObject var authVM: AuthViewModel
+    @ObservedObject var authVM: AuthViewModel1
 
     var body: some View {
         switch flow {

@@ -1,22 +1,15 @@
-//
-//  SelectObjectiveView.swift
-//  PFE_APP
-//
-//  Created by chaabani achref on 8/7/2025.
-//
-
 import SwiftUI
 
 struct SelectObjectiveView: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-    @EnvironmentObject var authVM: AuthViewModel
+    @EnvironmentObject var authVM: AuthViewModel1
 
     @State private var selectedObjective: String? = nil
     @State private var progress: Double = 0.0
     @State private var goToNext = false
-    @State private var navigateToPreferenceQuestions = false // For conditional navigation
+    @State private var goToOrientationChoices = false
 
-    let objectives: [String] = [
+    private let objectives: [String] = [
         "Je ne sais pas quoi faire après le bac et je veux trouver des idées !",
         "J’ai quelques idées de ce que je voudrais faire après le bac"
     ]
@@ -24,6 +17,7 @@ struct SelectObjectiveView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
+                // Progress
                 ProgressBarView(progress: $progress)
                     .padding(.top)
 
@@ -32,46 +26,47 @@ struct SelectObjectiveView: View {
                 titleSection
                 cardsSection
 
-                // ✅ Nouveau bouton dégradé
                 PrimaryGradientButton(title: "Suivant", enabled: selectedObjective != nil) {
-                    if let selected = selectedObjective {
-                        authVM.updateUserFields(["objectif": selected]) {
-                            DispatchQueue.main.async {
-                                if authVM.errorMessage == nil {
-                                    authVM.objectif = selected
+                    guard let selected = selectedObjective else { return }
 
-                                    // 🔁 Synchronisation propre pour SwiftUI
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                        withAnimation {
-                                            if selected == "J’ai quelques idées de ce que je voudrais faire après le bac" {
-                                                navigateToPreferenceQuestions = true
-                                            } else {
-                                                goToNext = true
-                                            }
-                                        }
-                                    }
+                    authVM.updateUserFields(["objectif": selected]) { result in
+                        switch result {
+                        case .success:
+                            authVM.objectif = selected
+                            withAnimation { progress = max(progress, 0.2) }
 
+                            withAnimation {
+                                if selected == "J’ai quelques idées de ce que je voudrais faire après le bac" {
+                                    goToOrientationChoices = true
                                 } else {
-                                    print("Failed to update user fields: \(authVM.errorMessage ?? "Unknown error")")
+                                    goToNext = true
                                 }
                             }
+
+                        case .failure(let error):
+                            authVM.errorMessage = ErrorMessage(message: "Erreur mise à jour : \(error.localizedDescription)")
                         }
                     }
                 }
                 .padding(.horizontal)
                 .padding(.bottom)
 
-                // Navigation Links
+                // 👉 To classic flow
                 NavigationLink(
-                    destination: SelectLevelView(progress: $progress),
-                    isActive: $goToNext,
-                    label: { EmptyView() }
-                )
+                    destination: SelectLevelView(progress: $progress)
+                        .onAppear { withAnimation { progress = max(progress, 0.3) } },
+                    isActive: $goToNext
+                ) { EmptyView() }
+                .hidden()
+
+                // 👉 To orientation choices (the page before IdeaClarifyView)
                 NavigationLink(
-                    destination: PreferenceQuestionsView(),
-                    isActive: $navigateToPreferenceQuestions,
-                    label: { EmptyView() }
-                )
+                    destination: OrientationChoicesView()
+                        .environmentObject(authVM)
+                        .onAppear { withAnimation { progress = max(progress, 0.3) } },
+                    isActive: $goToOrientationChoices
+                ) { EmptyView() }
+                .hidden()
             }
         }
         .background(Color(UIColor.systemGroupedBackground))
@@ -81,11 +76,12 @@ struct SelectObjectiveView: View {
             selectedObjective = nil
             progress = 0.0
             goToNext = false
-            navigateToPreferenceQuestions = false
+            goToOrientationChoices = false
+        }
+        .alert(item: $authVM.errorMessage) { error in
+            Alert(title: Text("Erreur"), message: Text(error.message), dismissButton: .default(Text("OK")))
         }
     }
-
-    // MARK: - Sections
 
     private var titleSection: some View {
         HStack(alignment: .top, spacing: 8) {
@@ -116,10 +112,12 @@ struct SelectObjectiveView: View {
                     isSelected: selectedObjective == option
                 )
                 .onTapGesture {
-                    if selectedObjective == nil {
-                        progress = min(progress + 0.1, 1.0)
+                    withAnimation {
+                        if selectedObjective == nil {
+                            progress = min(progress + 0.1, 1.0)
+                        }
+                        selectedObjective = option
                     }
-                    selectedObjective = option
                 }
             }
         }
@@ -132,14 +130,13 @@ struct SelectObjectiveView_Previews: PreviewProvider {
         Group {
             NavigationStack {
                 SelectObjectiveView()
-                    .environmentObject(AuthViewModel())
+                    .environmentObject(AuthViewModel1())
                     .preferredColorScheme(.light)
                     .environment(\.dynamicTypeSize, .medium)
             }
-
             NavigationStack {
                 SelectObjectiveView()
-                    .environmentObject(AuthViewModel())
+                    .environmentObject(AuthViewModel1())
                     .preferredColorScheme(.dark)
                     .environment(\.dynamicTypeSize, .accessibility3)
             }

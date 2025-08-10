@@ -151,7 +151,28 @@ class APIService {
             completion(.success(data))
         }.resume()
     }
-   
+    func patchRequest1(path: String, body: Data, token: String, completion: @escaping (Result<Data, Error>) -> Void) {
+        guard let url = URL(string: baseURL + path) else {
+            completion(.failure(NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "URL invalide"])))
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "PATCH"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.httpBody = body
+
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                completion(.failure(error))
+            } else if let data = data {
+                completion(.success(data))
+            } else {
+                completion(.failure(NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Aucune donnée reçue"])))
+            }
+        }.resume()
+    }
     func loginWithGoogle(googleAccessToken: String, completion: @escaping (Result<[String: Any], Error>) -> Void) {
         guard let url = URL(string: baseURL + "/auth/google") else {
             completion(.failure(APIError.invalidURL))
@@ -292,57 +313,87 @@ class APIService {
            }.resume()
        }
     // Update user's moyenne data (POST)
-        func updateUserMoyenne(_ moyenneData: MoyenneData, token: String, completion: @escaping (Result<MoyenneData, Error>) -> Void) {
-            guard let url = URL(string: baseURL + "/me/moyenne") else {
-                completion(.failure(APIError.invalidURL))
-                return
+    func updateUserMoyenne(_ moyenneData: MoyenneData, token: String, completion: @escaping (Result<MoyenneData, Error>) -> Void) {
+        guard let url = URL(string: baseURL + "/me/moyenne") else {
+            completion(.failure(APIError.invalidURL))
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        do {
+            let encoder = JSONEncoder()
+            encoder.keyEncodingStrategy = .convertToSnakeCase
+
+            let body = try encoder.encode(moyenneData)
+            request.httpBody = body
+
+            // 🐞 Affiche le JSON envoyé (à retirer en prod)
+            if let jsonString = String(data: body, encoding: .utf8) {
+                print("📤 JSON envoyé à /me/moyenne:\n\(jsonString)")
             }
 
-            var request = URLRequest(url: url)
-            request.httpMethod = "POST"
-            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        } catch {
+            completion(.failure(error))
+            return
+        }
 
-            do {
-                let body = try JSONEncoder().encode(moyenneData)
-                request.httpBody = body
-            } catch {
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
                 completion(.failure(error))
                 return
             }
 
-            URLSession.shared.dataTask(with: request) { data, response, error in
-                if let error = error {
-                    completion(.failure(error))
-                    return
+            guard let httpResponse = response as? HTTPURLResponse else {
+                completion(.failure(APIError.noData))
+                return
+            }
+
+            // 🐞 Log du code retour HTTP
+            print("📥 Statut HTTP: \(httpResponse.statusCode)")
+
+            guard let data = data else {
+                completion(.failure(APIError.noData))
+                return
+            }
+
+            switch httpResponse.statusCode {
+            case 200...299:
+                do {
+                    let decoder = JSONDecoder()
+                    decoder.keyDecodingStrategy = .convertFromSnakeCase
+                    let decoded = try decoder.decode(MoyenneData.self, from: data)
+                    completion(.success(decoded))
+                } catch {
+                    print("❌ Erreur de décodage:", error.localizedDescription)
+                    completion(.failure(APIError.decodingError))
                 }
 
-                guard let httpResponse = response as? HTTPURLResponse else {
-                    completion(.failure(APIError.noData))
-                    return
-                }
+            case 401:
+                completion(.failure(APIError.unauthorized))
 
-                switch httpResponse.statusCode {
-                case 200...299:
-                    guard let data = data else {
-                        completion(.failure(APIError.noData))
-                        return
-                    }
-                    do {
-                        let decoded = try JSONDecoder().decode(MoyenneData.self, from: data)
-                        completion(.success(decoded))
-                    } catch {
-                        completion(.failure(APIError.decodingError))
-                    }
-                case 401:
-                    completion(.failure(APIError.unauthorized))
-                case 500...599:
-                    completion(.failure(APIError.serverError))
-                default:
-                    completion(.failure(NSError(domain: "", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: "Unexpected status code"])))
+            case 422:
+                print("❌ Erreur 422: données invalides")
+                if let json = String(data: data, encoding: .utf8) {
+                    print("🧾 Réponse backend:", json)
                 }
-            }.resume()
-        }
+                completion(.failure(APIError.invalidPayload))
+
+            case 500...599:
+                print("❌ Erreur serveur 5xx")
+                completion(.failure(APIError.serverError))
+
+            default:
+                let errorMsg = HTTPURLResponse.localizedString(forStatusCode: httpResponse.statusCode)
+                print("❌ Statut HTTP inattendu: \(httpResponse.statusCode) - \(errorMsg)")
+                completion(.failure(NSError(domain: "", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: errorMsg])))
+            }
+
+        }.resume()
+    }
 
         // Get user's moyenne data (GET)
         func getUserMoyenne(token: String, completion: @escaping (Result<MoyenneData, Error>) -> Void) {
@@ -453,4 +504,6 @@ enum APIError: Error {
     case decodingError
     case unauthorized
     case serverError
+    case invalidPayload // ✅ Ajoute cette ligne
+
 }

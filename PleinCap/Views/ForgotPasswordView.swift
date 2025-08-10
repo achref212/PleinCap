@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct ForgotPasswordEmailView: View {
-    @ObservedObject var authVM: AuthViewModel
+    @ObservedObject var authVM: AuthViewModel1
     @State private var email = ""
     var goToCode: (_ email: String) -> Void
     var goToLogin: () -> Void
@@ -55,7 +55,10 @@ struct ForgotPasswordEmailView: View {
                         )
                     }
 
-                    AuthButton(title: "Envoyer le code", disabled: email.trimmingCharacters(in: .whitespaces).isEmpty) {
+                    AuthButton(
+                        title: "Envoyer le code",
+                        disabled: email.trimmingCharacters(in: .whitespaces).isEmpty
+                    ) {
                         let trimmed = email.trimmingCharacters(in: .whitespaces)
                         authVM.forgotPassword(email: trimmed) { ok in
                             if ok { goToCode(trimmed) }
@@ -63,11 +66,18 @@ struct ForgotPasswordEmailView: View {
                     }
 
                     if let err = authVM.errorMessage {
-                        Text(err)
+                        Text(err.message)
                             .foregroundColor(.red)
                             .font(.callout)
                             .multilineTextAlignment(.center)
                     }
+
+                    Button("Retour à la connexion") {
+                        goToLogin()
+                    }
+                    .font(.footnote.bold())
+                    .foregroundColor(Color(hex: "#17C1C1"))
+                    .padding(.top, 4)
                 }
                 .padding()
                 .frame(maxWidth: .infinity)
@@ -82,14 +92,14 @@ struct ForgotPasswordEmailView: View {
     }
 }
 
-
+// MARK: - Preview
 struct ForgotPasswordEmailView_Previews: PreviewProvider {
     static var previews: some View {
         Group {
-            ForgotPasswordEmailView(authVM: AuthViewModel(), goToCode: { _ in }, goToLogin: {})
+            ForgotPasswordEmailView(authVM: AuthViewModel1(), goToCode: { _ in }, goToLogin: {})
                 .preferredColorScheme(.light)
 
-            ForgotPasswordEmailView(authVM: AuthViewModel(), goToCode: { _ in }, goToLogin: {})
+            ForgotPasswordEmailView(authVM: AuthViewModel1(), goToCode: { _ in }, goToLogin: {})
                 .preferredColorScheme(.dark)
                 .environment(\.dynamicTypeSize, .accessibility2)
         }

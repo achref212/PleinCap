@@ -16,9 +16,4 @@ struct UserResponse: Codable {
     let sexe: String
     let date_naissance: String
 }
-struct TokenResponse: Codable {
-    let user: UserProfile
-    let access_token: String
-    let refresh_token: String?
-    let token_type: String
-}
+

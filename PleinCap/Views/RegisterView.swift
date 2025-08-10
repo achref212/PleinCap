@@ -2,7 +2,7 @@ import SwiftUI
 import GoogleSignInSwift
 
 struct RegisterView: View {
-    @ObservedObject var authVM: AuthViewModel
+    @ObservedObject var authVM: AuthViewModel1
     var goToVerify: (_ email: String) -> Void
     var goToLogin: () -> Void
 
@@ -30,9 +30,7 @@ struct RegisterView: View {
 
                             // ✅ Séparateur
                             HStack(alignment: .center, spacing: 12) {
-                                HStack {
-                                    DividerLabel(label: "ou créez un compte avec votre email")
-                                }
+                                DividerLabel(label: "ou créez un compte avec votre email")
                             }
                             .padding(.vertical, 8)
 
@@ -51,7 +49,10 @@ struct RegisterView: View {
 
                             AuthButton(
                                 title: "Créer un compte",
-                                disabled: authVM.email.isEmpty || authVM.password.isEmpty || authVM.confirmPassword != authVM.password
+                                disabled: authVM.email.isEmpty
+                                    || authVM.password.isEmpty
+                                    || authVM.confirmPassword != authVM.password
+                                    || authVM.registerStatus == .loading
                             ) {
                                 authVM.startRegister { ok in
                                     if ok { goToVerify(authVM.email) }
@@ -75,8 +76,20 @@ struct RegisterView: View {
                     ZStack {
                         VisualEffectBlur().ignoresSafeArea()
                         StatusDialogView(
-                            title: status == .success ? "Inscription réussie" : "Erreur",
-                            message: status == .success ? "Bienvenue !" : (authVM.errorMessage ?? "Une erreur est survenue."),
+                            title: {
+                                switch status {
+                                case .loading: return "Création du compte..."
+                                case .success: return "Inscription réussie"
+                                case .failure: return "Erreur"
+                                }
+                            }(),
+                            message: {
+                                switch status {
+                                case .loading: return "Veuillez patienter"
+                                case .success: return "Bienvenue !"
+                                case .failure: return authVM.errorMessage?.message ?? "Une erreur est survenue."
+                                }
+                            }(),
                             type: status
                         )
                         .padding(.bottom, 20)
@@ -114,11 +127,7 @@ struct RegisterView: View {
                         .background(Circle().stroke(Color(hex: "#17C1C1"), lineWidth: 2))
                 }).disabled(true)
 
-                Button(action: {
-                    if let topController = UIApplication.shared.windows.first?.rootViewController {
-                        authVM.signInWithGoogle(presenting: topController) { _ in }
-                    }
-                }, label: {
+                Button(action: handleGoogleRegister, label: {
                     Image("googleLogo")
                         .resizable()
                         .scaledToFit()
@@ -148,7 +157,7 @@ struct RegisterView: View {
                     .contentShape(Rectangle())
                     .onTapGesture {
                         withAnimation {
-                            authVM.sexe = String(label.prefix(1))
+                            authVM.sexe = String(label.prefix(1)) // "H", "F", "A"
                         }
                     }
                 }
@@ -210,13 +219,28 @@ struct RegisterView: View {
     }
 }
 
+// MARK: - Actions
+private extension RegisterView {
+    func handleGoogleRegister() {
+        guard let presentingVC = UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene })
+            .first?.windows.first?.rootViewController else {
+                print("❌ RootViewController introuvable")
+                return
+            }
+
+        authVM.signInWithGoogle(presenting: presentingVC) { _ in }
+    }
+}
+
+// MARK: - Preview
 struct RegisterView_Previews: PreviewProvider {
     static var previews: some View {
         Group {
-            RegisterView(authVM: AuthViewModel(), goToVerify: { _ in }, goToLogin: {})
+            RegisterView(authVM: AuthViewModel1(), goToVerify: { _ in }, goToLogin: {})
                 .preferredColorScheme(.light)
 
-            RegisterView(authVM: AuthViewModel(), goToVerify: { _ in }, goToLogin: {})
+            RegisterView(authVM: AuthViewModel1(), goToVerify: { _ in }, goToLogin: {})
                 .preferredColorScheme(.dark)
                 .environment(\.dynamicTypeSize, .accessibility3)
         }

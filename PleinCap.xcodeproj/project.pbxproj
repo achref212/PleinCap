@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		6F9484332E3A253800C12CB5 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 6F9484322E3A253800C12CB5 /* GoogleSignIn */; };
 		6F9484352E3A253800C12CB5 /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 6F9484342E3A253800C12CB5 /* GoogleSignInSwift */; };
+		6FF080AD2E48F12100363F8F /* GoogleGenerativeAI in Frameworks */ = {isa = PBXBuildFile; productRef = 6FF080AC2E48F12100363F8F /* GoogleGenerativeAI */; };
+		6FF080AF2E48F1A600363F8F /* Config.dev.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 6FF080AE2E48F1A600363F8F /* Config.dev.xcconfig */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -32,6 +34,7 @@
 		6F9483FC2E3A189900C12CB5 /* PleinCap.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PleinCap.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		6F94840B2E3A189D00C12CB5 /* PleinCapTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PleinCapTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		6F9484152E3A189D00C12CB5 /* PleinCapUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PleinCapUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		6FF080AE2E48F1A600363F8F /* Config.dev.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.dev.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -70,6 +73,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6FF080AD2E48F12100363F8F /* GoogleGenerativeAI in Frameworks */,
 				6F9484332E3A253800C12CB5 /* GoogleSignIn in Frameworks */,
 				6F9484352E3A253800C12CB5 /* GoogleSignInSwift in Frameworks */,
 			);
@@ -95,6 +99,7 @@
 		6F9483F32E3A189900C12CB5 = {
 			isa = PBXGroup;
 			children = (
+				6FF080AE2E48F1A600363F8F /* Config.dev.xcconfig */,
 				6F9483FE2E3A189900C12CB5 /* PleinCap */,
 				6F94840E2E3A189D00C12CB5 /* PleinCapTests */,
 				6F9484182E3A189D00C12CB5 /* PleinCapUITests */,
@@ -134,6 +139,7 @@
 			packageProductDependencies = (
 				6F9484322E3A253800C12CB5 /* GoogleSignIn */,
 				6F9484342E3A253800C12CB5 /* GoogleSignInSwift */,
+				6FF080AC2E48F12100363F8F /* GoogleGenerativeAI */,
 			);
 			productName = PleinCap;
 			productReference = 6F9483FC2E3A189900C12CB5 /* PleinCap.app */;
@@ -219,6 +225,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				6F94842C2E3A1A3600C12CB5 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
+				6FF080AB2E48F12100363F8F /* XCRemoteSwiftPackageReference "generative-ai-swift" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 6F9483FD2E3A189900C12CB5 /* Products */;
@@ -237,6 +244,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6FF080AF2E48F1A600363F8F /* Config.dev.xcconfig in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -427,6 +435,7 @@
 		};
 		6F9484202E3A189D00C12CB5 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 6FF080AE2E48F1A600363F8F /* Config.dev.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -601,6 +610,14 @@
 				minimumVersion = 9.0.0;
 			};
 		};
+		6FF080AB2E48F12100363F8F /* XCRemoteSwiftPackageReference "generative-ai-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/google/generative-ai-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.5.6;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -611,6 +628,11 @@
 		6F9484342E3A253800C12CB5 /* GoogleSignInSwift */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = GoogleSignInSwift;
+		};
+		6FF080AC2E48F12100363F8F /* GoogleGenerativeAI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 6FF080AB2E48F12100363F8F /* XCRemoteSwiftPackageReference "generative-ai-swift" */;
+			productName = GoogleGenerativeAI;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

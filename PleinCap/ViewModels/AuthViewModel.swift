@@ -10,15 +10,24 @@ import Foundation
 import Combine
 import GoogleSignIn
 import GoogleSignInSwift
+import SwiftUI
 
 class AuthViewModel: ObservableObject {
+    @AppStorage("access_token") var rawToken: String = ""
+    var accessToken: String? {
+        get {
+            rawToken.isEmpty ? nil : rawToken
+        }
+        set {
+            rawToken = newValue ?? ""
+        }
+    }
     // 🔐 Authentication State
     @Published var isAuthenticated = false
-    @Published var accessToken: String? = nil
+    
     @Published var refreshToken: String? = nil
-    @Published var userProfile: UserProfile? = nil
-    @Published var errorMessage: String? = nil
-
+    @Published var userProfile: UserProfile0? = nil
+    @Published var errorMessage: ErrorMessage? = nil
     // 🔑 Login/Registration Fields
     @Published var email = ""
     @Published var password = ""
@@ -30,10 +39,10 @@ class AuthViewModel: ObservableObject {
 
     // 🎓 Educational Profile
     @Published var niveauScolaire: String? = nil
-    @Published var voie: String? = nil
-    @Published var objectif: String? = nil
-    @Published var specialites: [String]? = nil
-    @Published var filiere: String? = nil
+    @Published var voie: String?
+    @Published var objectif: String?
+    @Published var filiere: String?
+    @Published var specialites: [String]?
 
     // 📊 Moyennes
         @Published var notes: [NoteData]? = nil // Array of notes for UI and sync
@@ -53,7 +62,7 @@ class AuthViewModel: ObservableObject {
     @Published var confirmPasswordError: String? = nil
     @Published var loginStatus: StatusType? = nil
     @Published var registerStatus: StatusType? = nil
-
+    
     private var cancellables = Set<AnyCancellable>()
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -107,7 +116,7 @@ class AuthViewModel: ObservableObject {
                     completion(true)
                 case .failure(let error):
                     self.registerStatus = .failure
-                    self.errorMessage = error.localizedDescription
+                    self.errorMessage = ErrorMessage(message: error.localizedDescription)
                     DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
                         self.registerStatus = nil
                     }
@@ -126,15 +135,16 @@ class AuthViewModel: ObservableObject {
                 case .success(let json):
                     do {
                         let data = try JSONSerialization.data(withJSONObject: json)
-                        let decoded = try JSONDecoder().decode(TokenResponse.self, from: data)
+                        let decoded = try JSONDecoder().decode(TokenResponse0.self, from: data)
                         self.updateState(with: decoded)
                         completion(true)
                     } catch {
-                        self.errorMessage = "Erreur de décodage"
+                        self.errorMessage = ErrorMessage(message: "Erreur de décodage")
                         completion(false)
                     }
                 case .failure(let err):
-                    self.errorMessage = err.localizedDescription
+                    self.errorMessage = ErrorMessage(message: err.localizedDescription)
+
                     completion(false)
                 }
             }
@@ -153,16 +163,18 @@ class AuthViewModel: ObservableObject {
                     case .success(let json):
                         do {
                             let data = try JSONSerialization.data(withJSONObject: json)
-                            let decoded = try JSONDecoder().decode(TokenResponse.self, from: data)
+                            let decoded = try JSONDecoder().decode(TokenResponse0.self, from: data)
+                            self.accessToken = decoded.access_token // ✅ Token sauvegardé
                             self.updateState(with: decoded)
                             self.loginStatus = .success
                         } catch {
                             self.loginStatus = .failure
-                            self.errorMessage = "Erreur lors du décodage des données."
+                            self.errorMessage = ErrorMessage(message:"Erreur lors du décodage des données.")
+
                         }
                     case .failure(let error):
                         self.loginStatus = .failure
-                        self.errorMessage = error.localizedDescription
+                        self.errorMessage = ErrorMessage(message:error.localizedDescription)
                     }
 
                     DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
@@ -172,7 +184,7 @@ class AuthViewModel: ObservableObject {
             }
         }
 
-    private func updateState(with decoded: TokenResponse) {
+    private func updateState(with decoded: TokenResponse0) {
         self.accessToken = decoded.access_token
         self.userProfile = decoded.user
         self.isAuthenticated = true
@@ -182,7 +194,8 @@ class AuthViewModel: ObservableObject {
     // MARK: - Profile Management
     func fetchUserProfile(completion: @escaping () -> Void) {
         guard let token = accessToken else {
-            errorMessage = "Token manquant"
+            self.errorMessage = ErrorMessage(message: "Token manquant")
+
             return
         }
 
@@ -192,21 +205,22 @@ class AuthViewModel: ObservableObject {
                 switch result {
                 case .success(let data):
                     do {
-                        let profile = try JSONDecoder().decode(UserProfile.self, from: data)
+                        let profile = try JSONDecoder().decode(UserProfile0.self, from: data)
                         self.userProfile = profile
                         self.syncLocalFields(from: profile)
                         completion()
                     } catch {
-                        self.errorMessage = "Erreur décodage profil"
+                        self.errorMessage = ErrorMessage(message: "Erreur décodage profil")
+
                     }
                 case .failure(let error):
-                    self.errorMessage = error.localizedDescription
+                    self.errorMessage = ErrorMessage(message: error.localizedDescription)
                 }
             }
         }
     }
 
-    private func syncLocalFields(from profile: UserProfile) {
+    private func syncLocalFields(from profile: UserProfile0) {
         self.email = profile.email
         self.nom = profile.nom
         self.prenom = profile.prenom
@@ -254,7 +268,9 @@ class AuthViewModel: ObservableObject {
                 case .success:
                     completion(true)
                 case .failure(let err):
-                    self?.errorMessage = err.localizedDescription
+                    
+                    self!.errorMessage = ErrorMessage(message: err.localizedDescription)
+
                     completion(false)
                 }
             }
@@ -269,7 +285,8 @@ class AuthViewModel: ObservableObject {
                 case .success:
                     completion(true)
                 case .failure(let err):
-                    self?.errorMessage = err.localizedDescription
+                    self!.errorMessage = ErrorMessage(message: err.localizedDescription)
+
                     completion(false)
                 }
             }
@@ -279,7 +296,8 @@ class AuthViewModel: ObservableObject {
     // MARK: - Updates
     func updateObjectif(_ objectif: String, completion: @escaping () -> Void) {
         guard let token = accessToken else {
-            errorMessage = "Token manquant"
+            self.errorMessage = ErrorMessage(message: "Token manquant")
+
             return
         }
 
@@ -290,121 +308,308 @@ class AuthViewModel: ObservableObject {
                 switch result {
                 case .success(let data):
                     do {
-                        let user = try JSONDecoder().decode(UserProfile.self, from: data)
+                        let user = try JSONDecoder().decode(UserProfile0.self, from: data)
                         self.userProfile = user
                         self.syncLocalFields(from: user)
                         completion()
                     } catch {
-                        self.errorMessage = "Erreur de décodage profil"
+                        self.errorMessage = ErrorMessage(message:  "Erreur de décodage profil")
+
                     }
                 case .failure(let err):
-                    self.errorMessage = "Erreur mise à jour : \(err.localizedDescription)"
+                    self.errorMessage = ErrorMessage(message:  "Erreur mise à jour : \(err.localizedDescription)")
                 }
             }
         }
     }
 
-    func updateUserFields(_ fields: [String: Any], completion: @escaping () -> Void) {
+//    func updateUserFields(_ fields: [String: Any], completion: @escaping () -> Void) {
+//        guard let token = accessToken else {
+//            errorMessage = "Token manquant"
+//            return
+//        }
+//
+//        APIService.shared.patchRequest(path: "/me", body: fields, token: token) { [weak self] result in
+//            DispatchQueue.main.async {
+//                guard let self = self else { return }
+//                switch result {
+//                case .success(let data):
+//                    do {
+//                        let user = try JSONDecoder().decode(UserProfile.self, from: data)
+//                        self.userProfile = user
+//                        self.syncLocalFields(from: user)
+//                        completion() // 🔴 CE CALL EST ESSENTIEL !!
+//                    } catch {
+//                        self.errorMessage = "Erreur de décodage profil"
+//                    }
+//                case .failure(let err):
+//                    self.errorMessage = "Erreur mise à jour : \(err.localizedDescription)"
+//                }
+//            }
+//        }
+//    }
+//    func updateExistingMoyenne(completion: @escaping () -> Void) {
+//        guard let token = accessToken else {
+//            errorMessage = "Token manquant"
+//            return
+//        }
+//
+//        let moyenneToUpdate = MoyenneData(
+//            id: userProfile?.moyenne?.id, // Utilise l'id existant si dispo
+//            specialty: specialty,
+//            notes: notes
+//        )
+//
+//        APIService.shared.updateExistingMoyenne(moyenneToUpdate, token: token) { [weak self] result in
+//            DispatchQueue.main.async {
+//                guard let self = self else { return }
+//                switch result {
+//                case .success(let updatedMoyenne):
+//                    self.userProfile?.moyenne = updatedMoyenne
+//                    self.notes = updatedMoyenne.notes
+//                    self.specialty = updatedMoyenne.specialty
+//                    print("✅ Moyenne mise à jour")
+//                    completion()
+//                case .failure(let error):
+//                    self.errorMessage = "Erreur mise à jour moyenne : \(error.localizedDescription)"
+//                    print("❌ Erreur API moyenne : \(error.localizedDescription)")
+//                }
+//            }
+//        }
+//    }
+//    func submitMoyenne(specialties: [String], completion: @escaping () -> Void) {
+//        guard let token = accessToken else {
+//            errorMessage = "Token manquant"
+//            return
+//        }
+//
+//        // 🔹 Génère des notes avec score = 0.0
+//        let generatedNotes: [NoteData] = specialties.map { specialty in
+//            return NoteData(subject: specialty, score: 0.0)
+//        }
+//
+//        // 🔹 Crée l'objet Moyenne à envoyer
+//        let moyenne = MoyenneData(
+//            id: userProfile?.moyenne?.id,
+//            specialty: specialties,
+//            notes: generatedNotes
+//        )
+//
+//        // 🔹 Envoie à l'API
+//        APIService.shared.updateUserMoyenne(moyenne, token: token) { [weak self] result in
+//            DispatchQueue.main.async {
+//                guard let self = self else { return }
+//
+//                switch result {
+//                case .success(let updatedMoyenne):
+//                    self.specialty = updatedMoyenne.specialty
+//                    self.notes = updatedMoyenne.notes
+//                    completion()
+//                case .failure(let err):
+//                    self.errorMessage = "Erreur moyenne : \(err.localizedDescription)"
+//                    print("❌ submitMoyenne failed:", err.localizedDescription)
+//                }
+//            }
+//        }
+//    }
+    
+//    func updateUserFields(_ fields: [String: Any], completion: @escaping (Result<Void, Error>) -> Void) {
+//            guard let token = accessToken else {
+//                self.errorMessage = ErrorMessage(message:"Token manquant")
+//
+//                completion(.failure(NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Token manquant"])))
+//                return
+//            }
+//
+//            APIService.shared.patchRequest(path: "/me", body: fields, token: token) { [weak self] result in
+//                DispatchQueue.main.async {
+//                    guard let self = self else { return }
+//                    switch result {
+//                    case .success(let data):
+//                        do {
+//                            let user = try JSONDecoder().decode(UserProfile.self, from: data)
+//                            self.userProfile = user
+//                            self.syncLocalFields(from: user)
+//                            completion(.success(())) // Success case
+//                        } catch {
+//                            self.errorMessage = ErrorMessage(message: "Erreur de décodage profil")
+//
+//                            completion(.failure(error))
+//                        }
+//                    case .failure(let err):
+//                        self.errorMessage = ErrorMessage(message:"Erreur mise à jour : \(err.localizedDescription)")
+//                        completion(.failure(err))
+//                    }
+//                }
+//            }
+//        }
+    private func requestTokenRefresh() {
+            print("⚠️ Tentative de rafraîchissement du token...")
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                self.accessToken = "new_token" // Mock for testing
+                print("🔑 Token rafraîchi : \(self.accessToken ?? "Échec")")
+            }
+        }
+    private func loadAccessToken() {
+            accessToken = UserDefaults.standard.string(forKey: "accessToken")
+            print("🔍 Loaded access token: \(accessToken ?? "Nil")")
+        }
+    
+    func updateUserFields(_ fields: [String: Any], completion: @escaping (Result<Void, Error>) -> Void) {
+        print("🕒 Attempting updateUserFields with fields: \(fields)")
+        
         guard let token = accessToken else {
-            errorMessage = "Token manquant"
+            errorMessage = ErrorMessage(message: "Token manquant. Veuillez vous reconnecter.")
+            completion(.failure(NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Token manquant"])))
             return
         }
 
-        APIService.shared.patchRequest(path: "/me", body: fields, token: token) { [weak self] result in
-            DispatchQueue.main.async {
-                guard let self = self else { return }
-                switch result {
-                case .success(let data):
-                    do {
-                        let user = try JSONDecoder().decode(UserProfile.self, from: data)
-                        self.userProfile = user
-                        self.syncLocalFields(from: user)
-                        completion()
-                    } catch {
-                        self.errorMessage = "Erreur de décodage profil"
+        do {
+            let jsonData = try JSONSerialization.data(withJSONObject: fields, options: [])
+            print("🔍 JSON envoyé : \(String(data: jsonData, encoding: .utf8) ?? "n/a")")
+
+            APIService.shared.patchRequest1(path: "/me", body: jsonData, token: token) { [weak self] result in
+                DispatchQueue.main.async {
+                    guard let self = self else { return }
+                    switch result {
+                    case .success(let data):
+                        let decoder = JSONDecoder()
+                        // Remove .iso8601 strategy to use UserProfile's custom decoding
+                        do {
+                            let user = try decoder.decode(UserProfile0.self, from: data)
+                            self.userProfile = user
+                            self.syncLocalFields(from: user)
+                            completion(.success(()))
+                        } catch {
+                            self.errorMessage = ErrorMessage(message: "Erreur de décodage : \(error.localizedDescription)")
+                            if let dataString = String(data: data, encoding: .utf8) {
+                                print("🔍 Réponse brute : \(dataString)")
+                            }
+                            completion(.failure(error))
+                        }
+                    case .failure(let error):
+                        self.errorMessage = ErrorMessage(message: "Erreur backend : \(error.localizedDescription)")
+                        completion(.failure(error))
                     }
-                case .failure(let err):
-                    self.errorMessage = "Erreur mise à jour : \(err.localizedDescription)"
                 }
             }
+        } catch {
+            errorMessage = ErrorMessage(message: "Erreur JSON : \(error.localizedDescription)")
+            completion(.failure(error))
         }
     }
-    func updateExistingMoyenne(completion: @escaping () -> Void) {
-        guard let token = accessToken else {
-            errorMessage = "Token manquant"
-            return
-        }
 
-        let moyenneToUpdate = MoyenneData(
-            id: userProfile?.moyenne?.id, // Utilise l'id existant si dispo
-            specialty: specialty,
-            notes: notes
-        )
-
-        APIService.shared.updateExistingMoyenne(moyenneToUpdate, token: token) { [weak self] result in
-            DispatchQueue.main.async {
-                guard let self = self else { return }
-                switch result {
-                case .success(let updatedMoyenne):
-                    self.userProfile?.moyenne = updatedMoyenne
-                    self.notes = updatedMoyenne.notes
-                    self.specialty = updatedMoyenne.specialty
-                    print("✅ Moyenne mise à jour")
-                    completion()
-                case .failure(let error):
-                    self.errorMessage = "Erreur mise à jour moyenne : \(error.localizedDescription)"
-                    print("❌ Erreur API moyenne : \(error.localizedDescription)")
-                }
-            }
-        }
-    }
-    func submitMoyenne(completion: @escaping () -> Void) {
+        func submitMoyenne(specialties: [String], completion: @escaping (Result<Void, Error>) -> Void) {
             guard let token = accessToken else {
-                errorMessage = "Token manquant"
+                errorMessage = ErrorMessage(message: "Token manquant")
+                completion(.failure(NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Token manquant"])))
                 return
             }
 
-            let moyenne = MoyenneData(id: nil, specialty: specialty, notes: notes)
+            let generatedNotes: [NoteData] = specialties.map { specialty in
+                return NoteData(subject: specialty, score: 0.0)
+            }
+
+            let moyenne = MoyenneData(
+                id: userProfile?.moyenne?.id,
+                specialty: specialties,
+                notes: generatedNotes
+            )
+
             APIService.shared.updateUserMoyenne(moyenne, token: token) { [weak self] result in
                 DispatchQueue.main.async {
                     guard let self = self else { return }
                     switch result {
                     case .success(let updatedMoyenne):
-                        self.specialty = updatedMoyenne.specialty
+                        self.userProfile?.moyenne = updatedMoyenne
                         self.notes = updatedMoyenne.notes
-                        completion()
+                        self.specialty = updatedMoyenne.specialty
+                        print("✅ Moyenne envoyée au backend")
+                        completion(.success(()))
                     case .failure(let err):
-                        self.errorMessage = "Erreur moyenne : \(err.localizedDescription)"
+                        self.errorMessage = ErrorMessage(message: "Erreur moyenne : \(err.localizedDescription)")
+                        print("❌ submitMoyenne failed: \(err.localizedDescription)")
+                        completion(.failure(err))
+                    }
+                }
+            }
+        }
+        func updateExistingMoyenne(completion: @escaping (Result<Void, Error>) -> Void) {
+            guard let token = accessToken else {
+                self.errorMessage = ErrorMessage(message:"Token manquant")
+
+                completion(.failure(NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Token manquant"])))
+                return
+            }
+
+            let moyenneToUpdate = MoyenneData(
+                id: userProfile?.moyenne?.id,
+                specialty: specialty,
+                notes: notes
+            )
+
+            APIService.shared.updateExistingMoyenne(moyenneToUpdate, token: token) { [weak self] result in
+                DispatchQueue.main.async {
+                    guard let self = self else { return }
+                    switch result {
+                    case .success(let updatedMoyenne):
+                        self.userProfile?.moyenne = updatedMoyenne
+                        self.notes = updatedMoyenne.notes
+                        self.specialty = updatedMoyenne.specialty
+                        print("✅ Moyenne mise à jour")
+                        completion(.success(()))
+                    case .failure(let error):
+                        self.errorMessage = ErrorMessage(message: "Erreur mise à jour moyenne : \(error.localizedDescription)")
+
+                        print("❌ Erreur API moyenne : \(error.localizedDescription)")
+                        completion(.failure(error))
                     }
                 }
             }
         }
 
-
-    func updateLocation(_ location: LocationData, completion: @escaping () -> Void) {
-        guard let token = accessToken else {
-            errorMessage = "Token manquant"
-            return
-        }
-
-        APIService.shared.updateUserLocation(location, token: token) { [weak self] result in
-            DispatchQueue.main.async {
-                guard let self = self else { return }
-                switch result {
-                case .success(let updatedProfile):
-                    self.userProfile = updatedProfile
-                    self.locationData = updatedProfile.location
-                    completion()
-                case .failure(let err):
-                    self.errorMessage = "Erreur localisation : \(err.localizedDescription)"
-                }
-            }
-        }
-    }
-
+//        func submitMoyenne(specialties: [String], completion: @escaping (Result<Void, Error>) -> Void) {
+//            guard let token = accessToken else {
+//                self.errorMessage = ErrorMessage(message: "Token manquant")
+//
+//                completion(.failure(NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Token manquant"])))
+//                return
+//            }
+//
+//            let generatedNotes: [NoteData] = specialties.map { specialty in
+//                return NoteData(subject: specialty, score: 0.0)
+//            }
+//
+//            let moyenne = MoyenneData(
+//                id: userProfile?.moyenne?.id,
+//                specialty: specialties, // Assuming specialty can be an array
+//                notes: generatedNotes
+//            )
+//
+//            APIService.shared.updateUserMoyenne(moyenne, token: token) { [weak self] result in
+//                DispatchQueue.main.async {
+//                    guard let self = self else { return }
+//                    switch result {
+//                    case .success(let updatedMoyenne):
+//                        self.specialty = updatedMoyenne.specialty
+//                        self.notes = updatedMoyenne.notes
+//                        print("✅ Moyenne envoyée au backend")
+//                        completion(.success(()))
+//                    case .failure(let err):
+//                        self.errorMessage = ErrorMessage(message: "Erreur moyenne : \(err.localizedDescription)")
+//
+//                        print("❌ submitMoyenne failed: \(err.localizedDescription)")
+//                        completion(.failure(err))
+//                    }
+//                }
+//            }
+//        }
+    
+   
     func fetchPlanAction(completion: @escaping () -> Void) {
             guard let token = accessToken else {
-                errorMessage = "Token manquant"
+                self.errorMessage = ErrorMessage(message:  "Token manquant")
+
                 return
             }
 
@@ -422,7 +627,8 @@ class AuthViewModel: ObservableObject {
                         }
                         completion()
                     case .failure(let err):
-                        self.errorMessage = "Erreur plan : \(err.localizedDescription)"
+                        self.errorMessage = ErrorMessage(message: "Erreur plan : \(err.localizedDescription)")
+
                     }
                 }
             }
@@ -435,13 +641,14 @@ class AuthViewModel: ObservableObject {
 
             GIDSignIn.sharedInstance.signIn(withPresenting: presenting) { signInResult, error in
                 if let error = error {
-                    self.errorMessage = "Erreur Google Sign-In: \(error.localizedDescription)"
+                    self.errorMessage = ErrorMessage(message: "Erreur Google Sign-In: \(error.localizedDescription)")
+
                     completion(false)
                     return
                 }
 
                 guard let idToken = signInResult?.user.idToken?.tokenString else {
-                    self.errorMessage = "Jeton Google invalide"
+                    self.errorMessage = ErrorMessage(message: "Jeton Google invalide")
                     completion(false)
                     return
                 }
@@ -453,7 +660,8 @@ class AuthViewModel: ObservableObject {
                             guard let access = json["access_token"] as? String,
                                   let refresh = json["refresh_token"] as? String,
                                   let userDict = json["user"] as? [String: Any] else {
-                                self.errorMessage = "Réponse invalide du serveur"
+                                self.errorMessage = ErrorMessage(message: "Réponse invalide du serveur")
+
                                 completion(false)
                                 return
                             }
@@ -471,7 +679,8 @@ class AuthViewModel: ObservableObject {
                             completion(true)
 
                         case .failure(let error):
-                            self.errorMessage = error.localizedDescription
+                            self.errorMessage = ErrorMessage(message: error.localizedDescription)
+
                             self.registerStatus = .failure
                             completion(false)
                         }
@@ -481,5 +690,35 @@ class AuthViewModel: ObservableObject {
         }
 }
 
+struct AnyEncodable: Codable {
+    private let value: Any
 
+    init(_ value: Any) {
+        self.value = value
+    }
 
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        switch value {
+        case let number as Int:
+            try container.encode(number)
+        case let number as Double:
+            try container.encode(number)
+        case let string as String:
+            try container.encode(string)
+        case let bool as Bool:
+            try container.encode(bool)
+        case let array as [Any]:
+            try container.encode(array.map { AnyEncodable($0) })
+        case let dictionary as [String: Any]:
+            try container.encode(Dictionary(uniqueKeysWithValues: dictionary.map { key, value in (key, AnyEncodable(value)) }))
+        default:
+            throw EncodingError.invalidValue(value, EncodingError.Context(codingPath: [], debugDescription: "Unsupported type for encoding"))
+        }
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        throw DecodingError.dataCorruptedError(in: container, debugDescription: "Decoding to AnyEncodable is not supported. Use specific types for decoding.")
+    }
+}

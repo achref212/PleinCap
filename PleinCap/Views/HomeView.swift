@@ -11,114 +11,129 @@ enum AuthFlowStep: Equatable {
 
 enum Appearance: String, CaseIterable, Identifiable {
     case system = "System"
-    case light = "Light"
-    case dark = "Dark"
-
+    case light  = "Light"
+    case dark   = "Dark"
     var id: String { rawValue }
 }
 
 struct HomeView: View {
-    @StateObject private var authVM = AuthViewModel()
+    // Legacy VM kept ONLY if some old views still need it (e.g., MainTabView signature).
+    @StateObject private var legacyAuthVM = AuthViewModel()
+
+    // ✅ New unified auth/profile VM
+    @StateObject private var authVM1 = AuthViewModel1()
+
+    // ✅ DirectoryVM used by academy/etablissement screens
+    @StateObject private var directoryVM = DirectoryViewModel()
+
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
     @State private var flow: AuthFlowStep = .login
     @State private var selectedTab = 0
     @State private var progress: Double = 0.0
-    @State private var navigationPath = NavigationPath() // Added for NavigationStack path management
+    @State private var navigationPath = NavigationPath()
 
     var body: some View {
         NavigationStack(path: $navigationPath) {
-            Group {
-                if !hasSeenOnboarding {
-                    OnboardingView()
-                        .navigationDestination(isPresented: .constant(!hasSeenOnboarding)) {
-                            appFlow
-                        }
-                } else {
-                    appFlow
-                }
-            }
-            .environmentObject(authVM)
-            .animation(.easeInOut, value: [authVM.isAuthenticated, hasSeenOnboarding]) // Consolidated animation triggers
+            appFlow
+                .animation(.easeInOut, value: authVM1.isAuthenticated)
+                .animation(.easeInOut, value: hasSeenOnboarding)
         }
-    }
-
-    @ViewBuilder
-    private var appFlow: some View {
-        if authVM.isAuthenticated {
-            if authVM.objectif == nil {
-                SelectObjectiveView()
-                    .environmentObject(authVM)
-                    .navigationDestination(isPresented: .constant(authVM.objectif != nil)) {
-                        nextView
-                    }
-            } else {
-                nextView
-            }
-        } else {
-            AuthContainer(flow: $flow, authVM: authVM)
-        }
-    }
-
-    @ViewBuilder
-    private var nextView: some View {
-        if authVM.niveauScolaire == nil {
-            SelectLevelView(progress: $progress)
-                .environmentObject(authVM)
-
-        } else if authVM.voie == nil {
-            SelectVoieView(
-                progress: $progress,
-                niveau: authVM.niveauScolaire ?? "Terminale"
-            )
-            .environmentObject(authVM)
-
-        } else if authVM.voie == "Générale" && (authVM.specialites?.isEmpty ?? true) {
-            SelectSpecialitesView(
-                progress: $progress,
-                niveau: authVM.niveauScolaire ?? "Terminale",
-                voie: "Générale",
-                filiere: nil
-            ) { _ in }
-            .environmentObject(authVM)
-
-        } else if authVM.voie == "Technologique" && (authVM.filiere?.isEmpty ?? true) {
-            SelectFiliereView(
-                progress: $progress,
-                niveau: authVM.niveauScolaire ?? "Terminale"
-            )
-            .environmentObject(authVM)
-
-        } else if authVM.voie == "Technologique" && (authVM.specialites?.isEmpty ?? true) {
-            SelectSpecialitesView(
-                progress: $progress,
-                niveau: authVM.niveauScolaire ?? "Terminale",
-                voie: "Technologique",
-                filiere: authVM.filiere // ✅ correction ici
-            ) { _ in }
-            .environmentObject(authVM)
-
-        } else if authVM.locationData?.etablissement == nil {
-            SelectEtablissementView(progress: $progress)
-                .environmentObject(authVM)
-
-        } else if authVM.locationData?.academie == nil {
-            SelectAcademieView(progress: $progress)
-                .environmentObject(authVM)
-
-        } else if authVM.locationData?.adresse?.isEmpty ?? true {
-            LocationPreferenceView(initialProgress: progress)
-                .environmentObject(authVM)
-
-        } else {
-            MainTabView(
-                selectedTab: $selectedTab,
-                authVM: authVM,
-                onLogout: {
-                    flow = .login
-                    authVM.logout()
+        // ✅ Onboarding as a full-screen cover (no back button on Login).
+        .fullScreenCover(isPresented: Binding(
+            get: { !hasSeenOnboarding },
+            set: { _ in }
+        )) {
+            OnboardingView()
+                .ignoresSafeArea()
+                .onDisappear {
+                    // Ensure a clean stack when onboarding completes
                     navigationPath = NavigationPath()
                 }
+        }
+    }
+
+    // MARK: - Root flow
+    @ViewBuilder
+    private var appFlow: some View {
+        if authVM1.isAuthenticated {
+            postAuthFlow
+        } else {
+            // ✅ Auth uses the new VM
+            AuthContainer(flow: $flow, authVM: authVM1)
+                .navigationBarBackButtonHidden(true)
+                .environmentObject(authVM1)
+        }
+    }
+
+    // MARK: - Post-auth progressive flow (uses AuthViewModel1 everywhere)
+    @ViewBuilder
+    private var postAuthFlow: some View {
+        if authVM1.objectif == nil {
+            SelectObjectiveView()
+                .environmentObject(authVM1)
+
+        } else if authVM1.niveauScolaire == nil {
+            SelectLevelView(progress: $progress)
+                .environmentObject(authVM1)
+
+        } else if authVM1.voie == nil {
+            SelectVoieView(
+                progress: $progress,
+                niveau: authVM1.niveauScolaire ?? "Terminale"
             )
+            .environmentObject(authVM1)
+
+        } else if authVM1.voie == "Générale" && (authVM1.specialites?.isEmpty ?? true) {
+            SelectSpecialitesView(
+                progress: $progress,
+                niveau: authVM1.niveauScolaire ?? "Terminale",
+                voie: "GÉNÉRALE",
+                filiere: "GÉNÉRALE"
+            ) { _ in }
+            .environmentObject(authVM1)
+
+        } else if authVM1.voie == "Technologique" && (authVM1.filiere?.isEmpty ?? true) {
+            SelectFiliereView(
+                progress: $progress,
+                niveau: authVM1.niveauScolaire ?? "Terminale"
+            )
+            .environmentObject(authVM1)
+
+        } else if authVM1.voie == "Technologique" && (authVM1.specialites?.isEmpty ?? true) {
+            SelectSpecialitesView(
+                progress: $progress,
+                niveau: authVM1.niveauScolaire ?? "Terminale",
+                voie: "Technologique",
+                filiere: authVM1.filiere
+            ) { _ in }
+            .environmentObject(authVM1)
+
+        // 🔰 LOCATION FLOW — go to ACADEMY FIRST (that screen pushes to Etablissements)
+        } else if (authVM1.userProfile?.academie?.isEmpty ?? true)
+                    || (authVM1.userProfile?.etablissement?.isEmpty ?? true) {
+            SelectAcademieView(progress: $progress)
+                .environmentObject(authVM1)
+                .environmentObject(directoryVM)   // used inside SelectAcademieView / SelectEtablissementView
+
+        } else if authVM1.userProfile?.adresse?.isEmpty ?? true {
+            LocationPreferenceView(initialProgress: progress)
+                .environmentObject(authVM1)
+
+        } else {
+            // ⬇️ If MainTabView still expects the legacy VM, we keep passing it here.
+            MainTabView(
+                selectedTab: $selectedTab,
+                authVM: legacyAuthVM,
+                onLogout: {
+                    flow = .login
+                    authVM1.logout()               // logout new VM
+                    legacyAuthVM.logout()          // if needed by older views
+                    navigationPath = NavigationPath()
+                    hasSeenOnboarding = true
+                }
+            )
+            .navigationBarBackButtonHidden(true)
+            .environmentObject(authVM1)
         }
     }
 }

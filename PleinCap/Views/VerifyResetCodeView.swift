@@ -1,14 +1,7 @@
-//
-//  VerifyResetCodeView.swift
-//  PFE_APP
-//
-//  Created by chaabani achref on 22/5/2025.
-//
-
 import SwiftUI
 
 struct VerifyResetCodeView: View {
-    @ObservedObject var authVM: AuthViewModel
+    @ObservedObject var authVM: AuthViewModel1
     let email: String
     var goToSetPassword: (_ email: String, _ code: String) -> Void
 
@@ -21,7 +14,7 @@ struct VerifyResetCodeView: View {
         codeDigits.allSatisfy { $0.count == 1 }
     }
 
-    var dynamicLayout: AnyLayout {
+    private var dynamicLayout: AnyLayout {
         dynamicTypeSize.isAccessibilitySize
         ? AnyLayout(VStackLayout(spacing: 16))
         : AnyLayout(HStackLayout(spacing: 12))
@@ -32,7 +25,6 @@ struct VerifyResetCodeView: View {
             CircleBackgroundView()
 
             VStack(spacing: 20) {
-                // 🔹 Logo & titre
                 Spacer(minLength: 40)
 
                 Image("PLogo 2")
@@ -54,7 +46,7 @@ struct VerifyResetCodeView: View {
 
                 Spacer()
 
-                // 🔹 Carte avec champ code
+                // Card
                 VStack(spacing: 30) {
                     VStack(spacing: 30) {
                         Text("Code de vérification")
@@ -62,29 +54,7 @@ struct VerifyResetCodeView: View {
                             .foregroundColor(.primary)
                             .frame(maxWidth: .infinity, alignment: .leading)
 
-                        dynamicLayout {
-                            ForEach(0..<6, id: \.self) { index in
-                                TextField("", text: $codeDigits[index])
-                                    .keyboardType(.numberPad)
-                                    .textContentType(.oneTimeCode)
-                                    .multilineTextAlignment(.center)
-                                    .font(.title2.weight(.semibold))
-                                    .frame(width: 45, height: 60)
-                                    .background(Color(UIColor.secondarySystemBackground))
-                                    .cornerRadius(20)
-                                    .focused($focusedIndex, equals: index)
-                                    .onChange(of: codeDigits[index]) { newValue in
-                                        if newValue.count > 1 {
-                                            codeDigits[index] = String(newValue.prefix(1))
-                                        }
-                                        if newValue.count == 1 && index < 5 {
-                                            focusedIndex = index + 1
-                                        } else if newValue.isEmpty && index > 0 {
-                                            focusedIndex = index - 1
-                                        }
-                                    }
-                            }
-                        }
+                        codeInputField
                     }
 
                     AuthButton(
@@ -96,7 +66,7 @@ struct VerifyResetCodeView: View {
                     }
 
                     if let err = authVM.errorMessage {
-                        Text(err)
+                        Text(err.message)
                             .foregroundColor(.red)
                             .font(.callout)
                             .multilineTextAlignment(.center)
@@ -114,15 +84,52 @@ struct VerifyResetCodeView: View {
         .onAppear { focusedIndex = 0 }
         .ignoresSafeArea(.keyboard, edges: .bottom)
     }
+
+    // MARK: - Code Input
+    private var codeInputField: some View {
+        dynamicLayout {
+            ForEach(0..<6, id: \.self) { index in
+                TextField("", text: $codeDigits[index])
+                    .keyboardType(.numberPad)
+                    .textContentType(.oneTimeCode)
+                    .textInputAutocapitalization(.never)
+                    .disableAutocorrection(true)
+                    .multilineTextAlignment(.center)
+                    .font(.title2.weight(.semibold))
+                    .frame(width: 45, height: 60)
+                    .background(Color.white)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20)
+                            .stroke(Color(hex: "#17C1C1"), lineWidth: 2)
+                    )
+                    .focused($focusedIndex, equals: index)
+                    .onChange(of: codeDigits[index]) { newValue in
+                        handleCodeInput(newValue, at: index)
+                    }
+                    .accessibilityLabel("Chiffre \(index + 1) du code")
+            }
+        }
+    }
+
+    private func handleCodeInput(_ newValue: String, at index: Int) {
+        if newValue.count > 1 {
+            codeDigits[index] = String(newValue.prefix(1))
+        }
+        if newValue.count == 1 && index < 5 {
+            focusedIndex = index + 1
+        } else if newValue.isEmpty && index > 0 {
+            focusedIndex = index - 1
+        }
+    }
 }
 
 struct VerifyResetCodeView_Previews: PreviewProvider {
     static var previews: some View {
         Group {
-            VerifyResetCodeView(authVM: AuthViewModel(), email: "demo@mail.com") { _, _ in }
+            VerifyResetCodeView(authVM: AuthViewModel1(), email: "demo@mail.com") { _, _ in }
                 .preferredColorScheme(.light)
 
-            VerifyResetCodeView(authVM: AuthViewModel(), email: "demo@mail.com") { _, _ in }
+            VerifyResetCodeView(authVM: AuthViewModel1(), email: "demo@mail.com") { _, _ in }
                 .preferredColorScheme(.dark)
                 .environment(\.dynamicTypeSize, .accessibility3)
         }

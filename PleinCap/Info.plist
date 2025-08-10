@@ -24,5 +24,7 @@
     <!-- ✅ Splash screen storyboard -->
     <key>UILaunchStoryboardName</key>
     <string>Launch Screen</string>
+    <key>GEMINI_API_KEY</key>
+    <string>$(GEMINI_API_KEY)</string>
 </dict>
 </plist>

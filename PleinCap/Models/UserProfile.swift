@@ -1,6 +1,6 @@
 import Foundation
 
-struct UserProfile: Codable {
+struct UserProfile0: Codable {
     let id: Int?
     let email: String
     let nom: String
@@ -8,6 +8,7 @@ struct UserProfile: Codable {
     let sexe: String
     let dateNaissance: Date  // Changed to Date for better handling
     let profilePicture: String?
+    let access_token: String?
 
     let niveauScolaire: String?
     let voie: String?
@@ -33,7 +34,7 @@ struct UserProfile: Codable {
         case dateNaissance = "date_naissance"
         case profilePicture = "profile_picture"
         case niveauScolaire = "niveau_scolaire"
-        case voie, objectif, specialites, filiere
+        case voie, objectif, specialites, filiere,access_token
         case telephone, budget
         case estBoursier = "est_boursier"
         case planActionId = "plan_action_id"
@@ -62,7 +63,8 @@ struct UserProfile: Codable {
         createdAt: Date? = nil,
         updatedAt: Date? = nil,
         moyenne: MoyenneData? = nil,
-        location: LocationData? = nil
+        location: LocationData? = nil,
+        access_token: String? = nil
     ) {
         self.id = id
         self.email = email
@@ -84,40 +86,68 @@ struct UserProfile: Codable {
         self.updatedAt = updatedAt
         self.moyenne = moyenne
         self.location = location
+        self.access_token = access_token
     }
 
     init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        self.id = try container.decodeIfPresent(Int.self, forKey: .id)
-        self.email = try container.decode(String.self, forKey: .email)
-        self.nom = try container.decode(String.self, forKey: .nom)
-        self.prenom = try container.decode(String.self, forKey: .prenom)
-        self.sexe = try container.decode(String.self, forKey: .sexe)
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            self.id = try container.decodeIfPresent(Int.self, forKey: .id)
+            self.email = try container.decode(String.self, forKey: .email)
+            self.nom = try container.decode(String.self, forKey: .nom)
+            self.prenom = try container.decode(String.self, forKey: .prenom)
+            self.sexe = try container.decode(String.self, forKey: .sexe)
 
-        // Decode date fields with a custom date strategy
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ" // ISO 8601 format
-        dateFormatter.locale = Locale(identifier: "en_US_POSIX")
-        self.dateNaissance = try container.decode(Date.self, forKey: .dateNaissance)
-        self.createdAt = try container.decodeIfPresent(Date.self, forKey: .createdAt)
-        self.updatedAt = try container.decodeIfPresent(Date.self, forKey: .updatedAt)
+            // Decode date fields with a custom date strategy
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSZ" // Supports fractional seconds
+            dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+            // Fallback formatter for dates without fractional seconds
+            let fallbackFormatter = DateFormatter()
+            fallbackFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
+            fallbackFormatter.locale = Locale(identifier: "en_US_POSIX")
 
-        self.profilePicture = try container.decodeIfPresent(String.self, forKey: .profilePicture)
-        self.niveauScolaire = try container.decodeIfPresent(String.self, forKey: .niveauScolaire)
-        self.voie = try container.decodeIfPresent(String.self, forKey: .voie)
-        self.objectif = try container.decodeIfPresent(String.self, forKey: .objectif)
-        self.specialites = try container.decodeIfPresent([String].self, forKey: .specialites)
-        self.filiere = try container.decodeIfPresent(String.self, forKey: .filiere)
-        self.telephone = try container.decodeIfPresent(String.self, forKey: .telephone)
-        self.budget = try container.decodeIfPresent(String.self, forKey: .budget)
-        self.estBoursier = try container.decodeIfPresent(Bool.self, forKey: .estBoursier)
-        self.planActionId = try container.decodeIfPresent(Int.self, forKey: .planActionId)
-        self.moyenne = try container.decodeIfPresent(MoyenneData.self, forKey: .moyenne)
-        self.location = try container.decodeIfPresent(LocationData.self, forKey: .location)
-    }
+            // Decode dateNaissance
+            if let dateString = try container.decodeIfPresent(String.self, forKey: .dateNaissance) {
+                if let date = dateFormatter.date(from: dateString) ?? fallbackFormatter.date(from: dateString) {
+                    self.dateNaissance = date
+                } else {
+                    throw DecodingError.dataCorruptedError(forKey: .dateNaissance, in: container, debugDescription: "Invalid date format for date_naissance: \(dateString)")
+                }
+            } else {
+                throw DecodingError.keyNotFound(CodingKeys.dateNaissance, DecodingError.Context(codingPath: container.codingPath, debugDescription: "Missing date_naissance"))
+            }
+
+            // Decode createdAt
+            if let createdAtString = try container.decodeIfPresent(String.self, forKey: .createdAt) {
+                self.createdAt = dateFormatter.date(from: createdAtString) ?? fallbackFormatter.date(from: createdAtString)
+            } else {
+                self.createdAt = nil
+            }
+
+            // Decode updatedAt
+            if let updatedAtString = try container.decodeIfPresent(String.self, forKey: .updatedAt) {
+                self.updatedAt = dateFormatter.date(from: updatedAtString) ?? fallbackFormatter.date(from: updatedAtString)
+            } else {
+                self.updatedAt = nil
+            }
+
+            self.profilePicture = try container.decodeIfPresent(String.self, forKey: .profilePicture)
+            self.niveauScolaire = try container.decodeIfPresent(String.self, forKey: .niveauScolaire)
+            self.voie = try container.decodeIfPresent(String.self, forKey: .voie)
+            self.objectif = try container.decodeIfPresent(String.self, forKey: .objectif)
+            self.specialites = try container.decodeIfPresent([String].self, forKey: .specialites)
+            self.filiere = try container.decodeIfPresent(String.self, forKey: .filiere)
+            self.telephone = try container.decodeIfPresent(String.self, forKey: .telephone)
+            self.budget = try container.decodeIfPresent(String.self, forKey: .budget)
+            self.estBoursier = try container.decodeIfPresent(Bool.self, forKey: .estBoursier)
+            self.planActionId = try container.decodeIfPresent(Int.self, forKey: .planActionId)
+            self.moyenne = try container.decodeIfPresent(MoyenneData.self, forKey: .moyenne)
+            self.location = try container.decodeIfPresent(LocationData.self, forKey: .location)
+            self.access_token = try container.decodeIfPresent(String.self, forKey: .access_token)
+        }
 }
-extension UserProfile {
-    static let preview = UserProfile(
+extension UserProfile0 {
+    static let preview = UserProfile0(
         id: 1,
         email: "john@example.com",
         nom: "Doe",

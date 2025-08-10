@@ -1,14 +1,7 @@
-//
-//  SetNewPasswordView.swift
-//  PFE_APP
-//
-//  Created by chaabani achref on 22/5/2025.
-//
-
 import SwiftUI
 
 struct SetNewPasswordView: View {
-    @ObservedObject var authVM: AuthViewModel
+    @ObservedObject var authVM: AuthViewModel1
     let email: String
     let code: String
 
@@ -17,7 +10,7 @@ struct SetNewPasswordView: View {
 
     var goToLogin: () -> Void
 
-    var isValid: Bool {
+    private var isValid: Bool {
         !password.isEmpty && password == confirmPassword
     }
 
@@ -26,7 +19,7 @@ struct SetNewPasswordView: View {
             CircleBackgroundView()
 
             VStack(spacing: 24) {
-                // 🔹 Header
+                // Header
                 Image("PLogo 2")
                     .resizable()
                     .scaledToFit()
@@ -48,7 +41,7 @@ struct SetNewPasswordView: View {
 
                 Spacer()
 
-                // 🔽 Carte blanche en bas
+                // Card
                 VStack(spacing: 24) {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Mot de passe")
@@ -63,6 +56,8 @@ struct SetNewPasswordView: View {
                             secure: true,
                             error: nil
                         )
+                        .textInputAutocapitalization(.never)
+                        .disableAutocorrection(true)
                     }
 
                     VStack(alignment: .leading, spacing: 8) {
@@ -78,6 +73,8 @@ struct SetNewPasswordView: View {
                             secure: true,
                             error: password != confirmPassword && !confirmPassword.isEmpty ? "Les mots de passe ne correspondent pas." : nil
                         )
+                        .textInputAutocapitalization(.never)
+                        .disableAutocorrection(true)
                     }
 
                     AuthButton(
@@ -92,7 +89,7 @@ struct SetNewPasswordView: View {
                     }
 
                     if let err = authVM.errorMessage {
-                        Text(err)
+                        Text(err.message)
                             .foregroundColor(.red)
                             .font(.callout)
                             .multilineTextAlignment(.center)
@@ -114,10 +111,10 @@ struct SetNewPasswordView: View {
 struct SetNewPasswordView_Previews: PreviewProvider {
     static var previews: some View {
         Group {
-            SetNewPasswordView(authVM: AuthViewModel(), email: "user@mail.com", code: "123456", goToLogin: {})
+            SetNewPasswordView(authVM: AuthViewModel1(), email: "user@mail.com", code: "123456", goToLogin: {})
                 .preferredColorScheme(.light)
 
-            SetNewPasswordView(authVM: AuthViewModel(), email: "user@mail.com", code: "123456", goToLogin: {})
+            SetNewPasswordView(authVM: AuthViewModel1(), email: "user@mail.com", code: "123456", goToLogin: {})
                 .preferredColorScheme(.dark)
                 .environment(\.dynamicTypeSize, .accessibility3)
         }

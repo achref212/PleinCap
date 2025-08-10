@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct LoginView: View {
-    @ObservedObject var authVM: AuthViewModel
+    @ObservedObject var authVM: AuthViewModel1
     var goToRegister: () -> Void
     var goToForgot: () -> Void
 
@@ -23,7 +23,7 @@ struct LoginView: View {
 
                 AuthCard {
                     VStack(spacing: 24) {
-                        // ✅ Partie Google / Apple EN PREMIER
+                        // ✅ Quick SSO first
                         VStack(spacing: 14) {
                             Text("Connexion rapide avec")
                                 .font(.footnote)
@@ -40,12 +40,12 @@ struct LoginView: View {
                             }
                         }
 
-                        // ✅ Séparateur
+                        // ✅ Separator
                         HStack {
                             DividerLabel(label: "ou connectez-vous avec votre email")
                         }
 
-                        // ✅ Formulaire classique en dessous
+                        // ✅ Email / password form
                         VStack(spacing: 20) {
                             LabeledField(
                                 sfIcon: "envelope",
@@ -73,13 +73,13 @@ struct LoginView: View {
 
                             AuthButton(
                                 title: "Login",
-                                disabled: authVM.email.isEmpty || authVM.password.isEmpty
+                                disabled: authVM.email.isEmpty || authVM.password.isEmpty || authVM.loginStatus == .loading
                             ) {
                                 authVM.login()
                             }
                         }
 
-                        // ✅ Inscription en bas
+                        // ✅ Register link
                         HStack(spacing: 6) {
                             Text("Pas encore de compte ?")
                                 .font(.footnote)
@@ -100,14 +100,20 @@ struct LoginView: View {
                         .ignoresSafeArea()
 
                     StatusDialogView(
-                        title: status == .success ? "Connexion réussie" : "Erreur",
-                        message: status == .success ? "Bienvenue sur PleinCap !" : (authVM.errorMessage ?? "Une erreur est survenue."),
+                        title: status == .success ? "Connexion réussie" : (status == .loading ? "Connexion..." : "Erreur"),
+                        message: {
+                            switch status {
+                            case .success: return "Bienvenue sur PleinCap !"
+                            case .loading: return "Veuillez patienter"
+                            case .failure: return authVM.errorMessage?.message ?? "Une erreur est survenue."
+                            }
+                        }(),
                         type: status
                     )
                     .padding(.bottom, 20)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
-                .zIndex(10)
+                .zIndex(10) // <- fixed
             }
         }
         .ignoresSafeArea(.container, edges: .bottom)
@@ -128,12 +134,12 @@ extension LoginView {
             if success {
                 print("✅ Connexion Google réussie")
             } else {
-                print("❌ Erreur Google : \(authVM.errorMessage ?? "Inconnue")")
+                print("❌ Erreur Google : \(authVM.errorMessage?.message ?? "Inconnue")")
             }
         }
     }
 }
 
 #Preview {
-    LoginView(authVM: AuthViewModel(), goToRegister: {}, goToForgot: {})
+    LoginView(authVM: AuthViewModel1(), goToRegister: {}, goToForgot: {})
 }

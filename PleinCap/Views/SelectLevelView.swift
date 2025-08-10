@@ -5,11 +5,11 @@ struct SelectLevelView: View {
     @Binding var progress: Double
     @State private var goToOptions = false
 
-    @EnvironmentObject var authVM: AuthViewModel
+    @EnvironmentObject var authVM: AuthViewModel1
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     // ✅ Seulement "Première" et "Terminale"
-    let levels = [
+    private let levels = [
         ("Première", "Tu es en classe de Première."),
         ("Terminale", "Tu es en classe de Terminale.")
     ]
@@ -29,8 +29,11 @@ struct SelectLevelView: View {
         .background(Color(UIColor.systemGroupedBackground))
         .navigationTitle("Choix du niveau")
         .navigationBarTitleDisplayMode(.inline)
-        .onAppear {
-            resetState()
+        .onAppear { resetState() }
+        .alert(item: $authVM.errorMessage) { err in
+            Alert(title: Text("Erreur"),
+                  message: Text(err.message),
+                  dismissButton: .default(Text("OK")))
         }
     }
 
@@ -74,9 +77,7 @@ struct SelectLevelView: View {
                     subtitle: level.1,
                     isSelected: selectedLevel == level.0
                 )
-                .onTapGesture {
-                    updateSelection(for: level.0)
-                }
+                .onTapGesture { updateSelection(for: level.0) }
             }
         }
         .padding(.horizontal)
@@ -84,19 +85,20 @@ struct SelectLevelView: View {
 
     private var buttonSection: some View {
         PrimaryGradientButton(title: "Suivant", enabled: selectedLevel != nil) {
-            if let level = selectedLevel {
-                print("Calling updateUserFields with niveau_scolaire: \(level)") // Debug
-                authVM.updateUserFields(["niveau_scolaire": level]) {
-                    DispatchQueue.main.async {
-                        print("updateUserFields completed") // Debug
+            guard let level = selectedLevel else { return }
 
-                        // 🔁 Synchronisation propre pour navigation SwiftUI
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                            withAnimation {
-                                goToOptions = true
-                            }
-                        }
+            // Save to backend via the new VM API
+            authVM.updateUserFields(["niveau_scolaire": level]) { result in
+                switch result {
+                case .success:
+                    // Mirror locally + advance progress + navigate
+                    authVM.niveauScolaire = level
+                    withAnimation {
+                        progress = max(progress, 0.3)
+                        goToOptions = true
                     }
+                case .failure(let error):
+                    authVM.errorMessage = ErrorMessage(message: "Erreur mise à jour : \(error.localizedDescription)")
                 }
             }
         }
@@ -106,7 +108,11 @@ struct SelectLevelView: View {
 
     private var navigationSection: some View {
         NavigationLink(
-            destination: SelectVoieView(progress: $progress, niveau: selectedLevel ?? ""),
+            destination: SelectVoieView(
+                progress: $progress,
+                niveau: selectedLevel ?? authVM.niveauScolaire ?? ""
+            )
+            .environmentObject(authVM),
             isActive: $goToOptions,
             label: { EmptyView() }
         )
@@ -116,8 +122,14 @@ struct SelectLevelView: View {
     // MARK: - Helper Methods
 
     private func resetState() {
-        selectedLevel = nil
-        progress = 0.2
+        // Preselect if the user already has a level saved (nice UX when coming back)
+        if let existing = authVM.niveauScolaire, !existing.isEmpty {
+            selectedLevel = existing
+            progress = max(progress, 0.3)
+        } else {
+            selectedLevel = nil
+            progress = max(progress, 0.2)
+        }
         goToOptions = false
     }
 
@@ -132,7 +144,7 @@ struct SelectLevelView: View {
 struct SelectLevelView_Previews: PreviewProvider {
     struct PreviewWrapper: View {
         @State private var progress: Double = 0.2
-        @StateObject private var authVM = AuthViewModel()
+        @StateObject private var authVM = AuthViewModel1()
 
         var body: some View {
             NavigationStack {

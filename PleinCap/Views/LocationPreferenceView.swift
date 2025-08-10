@@ -112,18 +112,18 @@ struct LocationPreferenceView: View {
             PrimaryGradientButton(title: "Suivant") {
                 if selectedFrance {
                     let location = LocationData(adresse: "Partout en France", distance: 0.0, latitude: 0.0, longitude: 0.0)
-                    authVM.updateLocation(location) {
-                        goToGrades = true
-                    }
+//                    authVM.updateLocation(location) {
+//                        goToGrades = true
+//                    }
                 } else if let loc = customLocations.first(where: { $0.isSelected }) {
                     let location = LocationData(
                         adresse: loc.title,
                         distance: loc.distance, latitude: loc.coordinates.latitude,
                         longitude: loc.coordinates.longitude
                     )
-                    authVM.updateLocation(location) {
-                        goToGrades = true
-                    }
+//                    authVM.updateLocation(location) {
+//                        goToGrades = true
+//                    }
                 }
             }
             .padding(.horizontal)
