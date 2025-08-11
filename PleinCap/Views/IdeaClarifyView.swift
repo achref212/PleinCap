@@ -143,7 +143,7 @@ struct IdeaClarifyView: View {
                             } label: {
                                 HStack {
                                     if isLoading { ProgressView().padding(.trailing, 4) }
-                                    Text("Proposer un résumé")
+                                    Text("Vérifier mon idée")
                                 }
                             }
                             .buttonStyle(.borderedProminent)
@@ -179,13 +179,13 @@ struct IdeaClarifyView: View {
             }
             .padding()
         }
-        .navigationTitle("Clarifier mon idée")
-        .navigationBarTitleDisplayMode(.inline)
+//        .navigationTitle("Clarifier mon idée")
+//        .navigationBarTitleDisplayMode(.inline)
     }
 
     private var header: some View {
         VStack(spacing: 10) {
-            Image("ThinkingStudent")
+            Image("orientation")
                 .resizable()
                 .scaledToFit()
                 .frame(height: 160)
@@ -211,7 +211,7 @@ struct IdeaClarifyView: View {
     private func confirmationCard(ai: String) -> some View {
         card {
             VStack(alignment: .leading, spacing: 12) {
-                Text("Résumé proposé")
+                Text("Résultat de la vérification")
                     .font(.headline)
                 Text(ai)
                     .font(.body)

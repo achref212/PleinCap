@@ -6,7 +6,8 @@ struct NotesIntroView: View {
 
     @Binding var progress: Double
 
-    // Navigation to BourseEligibilityView
+    // Navigation states
+    @State private var goToEntry  = false
     @State private var goToBourse = false
 
     var body: some View {
@@ -74,7 +75,7 @@ struct NotesIntroView: View {
                     systemImage: "pencil.and.outline"
                 ) {
                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    goToBourse = true        // 👉 navigate to BourseEligibilityView
+                    goToEntry = true          // 👉 open NotesEntryView
                 }
             }
             .padding(18)
@@ -88,10 +89,10 @@ struct NotesIntroView: View {
 
             Spacer(minLength: 8)
 
-            // Primary “Suivant”
+            // Primary “Suivant” ➜ BourseEligibilityView
             PrimaryGradientButton(title: "Suivant", enabled: true) {
                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                goToBourse = true           // 👉 also continue to BourseEligibilityView
+                goToBourse = true
             }
             .padding(.horizontal)
             .padding(.bottom, 8)
@@ -106,20 +107,26 @@ struct NotesIntroView: View {
                 withAnimation(.easeInOut(duration: 0.25)) { progress = 0.30 }
             }
         }
-        // ✅ Programmatic navigation to BourseEligibilityView
+        // Hidden navigation links
         .background(
-            NavigationLink(isActive: $goToBourse) {
-                BourseEligibilityView(progress: $progress)
-                    .environmentObject(authVM)
-            } label: {
-                EmptyView()
+            Group {
+                NavigationLink(isActive: $goToEntry) {
+                    NotesEntryView(progress: $progress)
+                        .environmentObject(authVM)
+                } label: { EmptyView() }
+                .hidden()
+
+                NavigationLink(isActive: $goToBourse) {
+                    BourseEligibilityView(progress: $progress)
+                        .environmentObject(authVM)
+                } label: { EmptyView() }
+                .hidden()
             }
-            .hidden()
         )
     }
 }
 
-// MARK: - A simple outlined pill button
+// MARK: - Outlined pill button
 
 private struct PillOutlineButton: View {
     let title: String

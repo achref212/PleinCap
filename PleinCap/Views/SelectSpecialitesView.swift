@@ -11,20 +11,22 @@ struct SelectSpecialitesView: View {
 
     let niveau: String           // "Première" | "Terminale"
     let voie: String             // "Générale" | "Technologique"
-    let filiere: String          // e.g. "STMG", "STI2D", ... or "" when voie = Générale
-    let preselectedDefaults: [String]   // defaults from previous step (sanitized or not)
+    let filiere: String          // e.g. "STMG", "STI2D", ... or "" for Générale
+    let preselectedDefaults: [String]   // DISPLAY defaults from previous step
 
-    private var isTerminale: Bool { niveau.folding(options: [.diacriticInsensitive], locale: .init(identifier: "fr_FR")).lowercased() == "terminale" }
+    // ✅ Fixed: compare to lowercase "terminale"
+    private var isTerminale: Bool {
+        niveau.folding(options: [.diacriticInsensitive], locale: .init(identifier: "fr_FR"))
+            .lowercased() == "terminale"
+    }
 
-    // Max per-section allowed (Première: 3, Terminale: 2)
     private var maxSelectionDefault: Int { isTerminale ? 2 : 3 }
 
-    // Normalize the defaults once
     private var defaultSetSanitized: Set<String> {
         Set(preselectedDefaults.map { $0.sanitizedFR })
     }
 
-    // MARK: - Specialités par filière / voie (groupées, DISPLAY version)
+    // MARK: - Grouped options (DISPLAY)
     private var groupedSpecialites: [String: [String]] {
         if voie.localizedCaseInsensitiveCompare("Générale") == .orderedSame {
             return [
@@ -128,8 +130,8 @@ struct SelectSpecialitesView: View {
 
         case "STD2A":
             return ["Spécialités STD2A": [
-                "Physique-chimie", "Outils et langages numériques", "Design et métiers d’art",
-                "Analyse et méthodes en design", "Conception et création en design et métiers d’art"
+                "Physique-chimie","Outils et langages numériques","Design et métiers d’art",
+                "Analyse et méthodes en design","Conception et création en design et métiers d’art"
             ]]
 
         default:
@@ -137,12 +139,10 @@ struct SelectSpecialitesView: View {
         }
     }
 
-    // Helper: is a DISPLAY option one of the defaults (by sanitized comparison)?
     private func isDefault(_ optionDisplay: String) -> Bool {
         defaultSetSanitized.contains(optionDisplay.sanitizedFR)
     }
 
-    // Max per-section before defaults
     private var maxSelectionPerSectionBase: [String: Int] {
         var config: [String: Int] = [:]
         for key in groupedSpecialites.keys {
@@ -163,14 +163,12 @@ struct SelectSpecialitesView: View {
         return config
     }
 
-    // Effective max once defaults are counted
     private func effectiveMax(for section: String) -> Int {
         let base = maxSelectionPerSectionBase[section] ?? maxSelectionDefault
         let defaultsCount = (groupedSpecialites[section] ?? []).filter { isDefault($0) }.count
         return max(0, base - defaultsCount)
     }
 
-    // Sections to show (defaults removed)
     private var visibleSections: [(title: String, options: [String], max: Int)] {
         Array(groupedSpecialites.keys)
             .sorted()
@@ -182,7 +180,6 @@ struct SelectSpecialitesView: View {
             }
     }
 
-    // Validation counting defaults + picks in each section
     private func isValidSelection() -> Bool {
         for (section, options, _) in visibleSections {
             let baseMax = maxSelectionPerSectionBase[section] ?? maxSelectionDefault
@@ -220,14 +217,11 @@ struct SelectSpecialitesView: View {
                 .padding(.bottom, 120)
             }
 
-            // Footer
             VStack {
                 PrimaryGradientButton(
                     title: isSaving ? "Enregistrement..." : (visibleSections.isEmpty ? "Continuer" : "Suivant"),
                     enabled: (visibleSections.isEmpty || isValidSelection()) && !isSaving
-                ) {
-                    saveAndNavigate()
-                }
+                ) { saveAndNavigate() }
                 .padding(.horizontal)
 
                 NavigationLink(
@@ -244,8 +238,8 @@ struct SelectSpecialitesView: View {
         .navigationTitle("Choix des spécialités")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
-            // Convert any saved sanitized values back to DISPLAY strings when possible,
-            // then remove defaults from initial selection.
+            // Rebuild user selection from backend (sanitized) into DISPLAY strings,
+            // then remove defaults from the initial selection.
             let savedSanitized = Set((authVM.specialites ?? []).map { $0.sanitizedFR })
             let allDisplay = groupedSpecialites.values.flatMap { $0 }
             let savedDisplay = allDisplay.filter { savedSanitized.contains($0.sanitizedFR) }
@@ -269,17 +263,13 @@ struct SelectSpecialitesView: View {
         }
     }
 
-    // MARK: - Subviews
-
     private var header: some View {
         HStack(alignment: .top, spacing: 8) {
             Rectangle().fill(Color.orange).frame(width: 4).cornerRadius(2)
-
             VStack(alignment: .leading, spacing: 4) {
                 Text("Choisis tes spécialités")
                     .font(dynamicTypeSize.isAccessibilitySize ? .title3.bold() : .title3.bold())
                     .foregroundColor(Color(hex: "#2C4364"))
-
                 Text(visibleSections.isEmpty
                      ? "Tes spécialités par défaut couvrent déjà ce qu’il faut."
                      : "Fais au moins un choix par groupe (jusqu’à \(maxSelectionDefault) pour certains).")
@@ -291,11 +281,10 @@ struct SelectSpecialitesView: View {
         .padding(.horizontal)
     }
 
-    // MARK: - Actions
+    // MARK: - Save
 
     private func saveAndNavigate() {
         isSaving = true
-        // Persist sanitized defaults + sanitized picks
         let combinedSanitized = Array(
             defaultSetSanitized.union(selectedSpecialites.map { $0.sanitizedFR })
         ).sorted()

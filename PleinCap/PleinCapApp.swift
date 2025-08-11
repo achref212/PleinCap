@@ -13,12 +13,21 @@ struct PleinCapApp: App {
     @AppStorage("selectedTheme") private var selectedTheme: String = AppColorScheme.system.rawValue
     @StateObject var locationManager = LocationManager()
     @StateObject private var authVM = AuthViewModel1() // ✅ Important : @StateObject
+    @State private var showSplash = true
 
     var body: some Scene {
             WindowGroup {
-                NavigationStack {
-                    HomeView() // ou n’importe quelle vue de départ
-                }
+                Group {
+                                if showSplash {
+                                    SplashScreenView {
+                                        withAnimation(.easeInOut(duration: 0.35)) {
+                                            showSplash = false
+                                        }
+                                    }
+                                } else {
+                                    HomeView()              // your actual root view
+                                }
+                            }
                 .environmentObject(authVM) // ✅ Injecté ici globalement
             }
         }

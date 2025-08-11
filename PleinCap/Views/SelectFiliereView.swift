@@ -1,4 +1,5 @@
 import SwiftUI
+
 extension String {
     /// Remove French diacritics and apostrophes for backend-safe keys.
     var sanitizedFR: String {
@@ -8,6 +9,7 @@ extension String {
             .replacingOccurrences(of: "'", with: "")
     }
 }
+
 struct SelectFiliereView: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @EnvironmentObject var authVM: AuthViewModel1
@@ -19,62 +21,66 @@ struct SelectFiliereView: View {
     @State private var isSaving = false
 
     let niveau: String
+
     private func isPremiere(_ niveau: String) -> Bool {
-        // Accepts "Première" or "premiere" etc.
-        niveau.folding(options: [.diacriticInsensitive], locale: Locale(identifier: "fr_FR"))
+        niveau.folding(options: [.diacriticInsensitive], locale: .init(identifier: "fr_FR"))
             .lowercased() == "premiere"
     }
-    // Liste des filières technologiques
-    private let filieresTechnos = [
-        "STMG", "STI2D", "S2TMD", "ST2S", "STAV", "STD2A", "STHR", "STL"
-    ]
 
-    /// Celles qui demanderont potentiellement un écran de spécialités ensuite
-    private let filieresAvecChoix: Set<String> = ["STMG", "STI2D", "S2TMD", "STAV", "STL"]
+    private let filieresTechnos = ["STMG","STI2D","S2TMD","ST2S","STAV","STD2A","STHR","STL"]
 
-    // ---- Defaults par filière/niveau ----
-    private func defaultSpecialites(for filiere: String, niveau: String) -> [String] {
-        let values: [String]
+    /// Filieres that show the specialties screen next
+    private let filieresAvecChoix: Set<String> = ["STMG","STI2D","S2TMD","STAV","STL"]
 
+    // ---- DISPLAY defaults by filière/niveau (accented for UI) ----
+    private func defaultSpecialitesDisplay(for filiere: String, niveau: String) -> [String] {
         switch filiere.uppercased() {
         case "STMG":
-            values = isPremiere(niveau)
-                ? ["Droit et économie", "Management", "Sciences de gestion et du numérique"]
+            return isPremiere(niveau)
+                ? ["Droit et économie","Management","Sciences de gestion et du numérique"]
                 : ["Droit et économie"]
-
         case "ST2S":
-            values = isPremiere(niveau)
+            return isPremiere(niveau)
                 ? ["Physique chimie pour la santé",
                    "Biologie et physiopathologie humaines",
                    "Sciences et techniques sanitaires et sociales"]
                 : ["Sciences et techniques sanitaires et sociales",
                    "Chimie, biologie et physiopathologie humaines"]
-
         case "STHR":
-            values = ["Économie et gestion hôtelière", "Sciences et technologies culinaires"]
-
+            return ["Économie et gestion hôtelière","Sciences et technologies culinaires"]
         case "STD2A":
-            values = isPremiere(niveau)
-                ? ["Physique-chimie", "Outils et langages numériques", "Design et métiers d’art"]
-                : ["Analyse et méthodes en design", "Conception et création en design et métiers d’art"]
-
+            return isPremiere(niveau)
+                ? ["Physique-chimie","Outils et langages numériques","Design et métiers d’art"]
+                : ["Analyse et méthodes en design","Conception et création en design et métiers d’art"]
         case "STAV":
-            values = isPremiere(niveau)
-                ? ["Gestion des ressources et de l'alimentation", "Territoires et sociétés"]
+            return isPremiere(niveau)
+                ? ["Gestion des ressources et de l'alimentation","Territoires et sociétés"]
                 : ["Gestion des ressources et de l'alimentation"]
-
         case "S2TMD":
-            values = ["Économie, droit et environnement du spectacle vivant"]
-
+            return ["Économie, droit et environnement du spectacle vivant"]
         case "STL":
-            values = ["Biotechnologies", "Sciences physiques et chimiques en laboratoire"]
-
+            return ["Biotechnologies","Sciences physiques et chimiques en laboratoire"]
         default:
-            values = []
+            return []
         }
+    }
 
-        // ✅ Return sanitized versions: accents stripped, apostrophes removed
-        return values.map { $0.sanitizedFR }
+    // Pre-built destination keeps type-checking fast
+    @ViewBuilder
+    private var destinationSpecialites: some View {
+        if let fil = selectedFiliere {
+            let defaultsDisplay = defaultSpecialitesDisplay(for: fil, niveau: niveau)
+            SelectSpecialitesView(
+                progress: $progress,
+                niveau: niveau,
+                voie: "Technologique",
+                filiere: fil,
+                preselectedDefaults: defaultsDisplay   // pass DISPLAY strings
+            )
+            .environmentObject(authVM)
+        } else {
+            EmptyView()
+        }
     }
 
     var body: some View {
@@ -93,16 +99,13 @@ struct SelectFiliereView: View {
                             ForEach(filieresTechnos, id: \.self) { filiere in
                                 SelectableCardGridView(
                                     title: filiere,
-                                    isSelected: selectedFiliere == filiere,
-                                    onTap: {
-                                        withAnimation {
-                                            if selectedFiliere == nil {
-                                                progress = min(progress + 0.1, 1.0)
-                                            }
-                                            selectedFiliere = filiere
-                                        }
+                                    isSelected: selectedFiliere == filiere
+                                ) {
+                                    withAnimation {
+                                        if selectedFiliere == nil { progress = min(progress + 0.1, 1.0) }
+                                        selectedFiliere = filiere
                                     }
-                                )
+                                }
                             }
                         }
                         .padding(.horizontal)
@@ -113,30 +116,16 @@ struct SelectFiliereView: View {
                 PrimaryGradientButton(
                     title: isSaving ? "Enregistrement..." : "Suivant",
                     enabled: selectedFiliere != nil && !isSaving
-                ) {
-                    saveAndNavigate()
-                }
+                ) { saveAndNavigate() }
                 .padding(.horizontal)
                 .padding(.bottom, 12)
             }
 
-            // -> vers écran spécialités complémentaires
-            NavigationLink(
-                destination: {
-                    SelectSpecialitesView(
-                        progress: $progress,
-                        niveau: niveau,
-                        voie: "Technologique",
-                        filiere: selectedFiliere ?? "",
-                        preselectedDefaults: defaultSpecialites(for: selectedFiliere ?? "", niveau: niveau) // << pass defaults
-                    )
-                    .environmentObject(authVM)
-                }(),
-                isActive: $goToSpecialites
-            ) { EmptyView() }
-            .hidden()
+            // -> specialties screen when needed
+            NavigationLink(destination: destinationSpecialites, isActive: $goToSpecialites) { EmptyView() }
+                .hidden()
 
-            // -> sinon on passe à la suite
+            // -> else continue the flow
             NavigationLink(
                 destination: SelectAcademieView(progress: $progress)
                     .environmentObject(authVM),
@@ -149,31 +138,21 @@ struct SelectFiliereView: View {
         .navigationBarTitleDisplayMode(.inline)
         .onAppear { preloadState() }
         .alert(item: $authVM.errorMessage) { error in
-            Alert(title: Text("Erreur"),
-                  message: Text(error.message),
-                  dismissButton: .default(Text("OK")))
+            Alert(title: Text("Erreur"), message: Text(error.message), dismissButton: .default(Text("OK")))
         }
     }
 
-    // MARK: - Subviews
-
     private var header: some View {
         HStack(alignment: .top, spacing: 8) {
-            Rectangle()
-                .fill(Color.orange)
-                .frame(width: 4)
-                .cornerRadius(2)
-
+            Rectangle().fill(Color.orange).frame(width: 4).cornerRadius(2)
             VStack(alignment: .leading, spacing: 4) {
                 Text("Choisis ta filière technologique")
                     .font(dynamicTypeSize.isAccessibilitySize ? .title3.bold() : .title3.bold())
                     .foregroundColor(Color(hex: "#2C4364"))
-
                 Text("Une seule filière possible.")
                     .font(dynamicTypeSize.isAccessibilitySize ? .body : .subheadline)
                     .foregroundColor(.secondary)
             }
-
             Spacer()
         }
         .padding(.horizontal)
@@ -194,26 +173,25 @@ struct SelectFiliereView: View {
 
     private func saveAndNavigate() {
         guard let filiere = selectedFiliere else { return }
-        let defaults = defaultSpecialites(for: filiere, niveau: niveau)
+        let defaultsDisplay = defaultSpecialitesDisplay(for: filiere, niveau: niveau)
+        let defaultsSanitized = defaultsDisplay.map { $0.sanitizedFR }
         isSaving = true
 
-        // MàJ du profil avec filière + defaults (préremplis)
+        // Save filière + defaults (sanitized) to backend
         authVM.updateUserFields([
             "filiere": filiere,
-            "specialites": defaults
+            "specialites": defaultsSanitized
         ]) { result in
             isSaving = false
             switch result {
             case .success:
                 authVM.filiere = filiere
-                authVM.specialites = defaults
+                authVM.specialites = defaultsSanitized
                 withAnimation {
                     progress = max(progress, 0.55)
                     if filieresAvecChoix.contains(filiere.uppercased()) {
-                        // L’écran suivant masquera les defaults et proposera le complément
                         goToSpecialites = true
                     } else {
-                        // Tout est déjà couvert par la filière choisie
                         goToEtablissement = true
                     }
                 }
@@ -223,7 +201,6 @@ struct SelectFiliereView: View {
         }
     }
 }
-import SwiftUI
 
 struct SelectFiliereView_Previews: PreviewProvider {
     struct Demo: View {

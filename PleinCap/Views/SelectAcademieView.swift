@@ -179,7 +179,7 @@ struct SelectAcademieView: View {
             Button {
                 withAnimation { goPrevPage() }
             } label: {
-                HStack(spacing: 6) { Image(systemName: "chevron.left"); Text("Précédent") }
+                HStack(spacing: 8) { Image(systemName: "chevron.left") }
             }
             .buttonStyle(.bordered)
             .disabled(currentPage <= 1)
@@ -193,7 +193,7 @@ struct SelectAcademieView: View {
             Button {
                 withAnimation { goNextPage() }
             } label: {
-                HStack(spacing: 6) { Text("Suivant"); Image(systemName: "chevron.right") }
+                HStack(spacing: 6) { Image(systemName: "chevron.right") }
             }
             .buttonStyle(.bordered)
             .disabled(currentPage >= totalPages)
