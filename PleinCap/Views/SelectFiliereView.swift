@@ -1,5 +1,13 @@
 import SwiftUI
-
+extension String {
+    /// Remove French diacritics and apostrophes for backend-safe keys.
+    var sanitizedFR: String {
+        let folded = self.folding(options: [.diacriticInsensitive], locale: Locale(identifier: "fr_FR"))
+        return folded
+            .replacingOccurrences(of: "’", with: "")
+            .replacingOccurrences(of: "'", with: "")
+    }
+}
 struct SelectFiliereView: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @EnvironmentObject var authVM: AuthViewModel1
@@ -11,44 +19,62 @@ struct SelectFiliereView: View {
     @State private var isSaving = false
 
     let niveau: String
-
+    private func isPremiere(_ niveau: String) -> Bool {
+        // Accepts "Première" or "premiere" etc.
+        niveau.folding(options: [.diacriticInsensitive], locale: Locale(identifier: "fr_FR"))
+            .lowercased() == "premiere"
+    }
     // Liste des filières technologiques
     private let filieresTechnos = [
         "STMG", "STI2D", "S2TMD", "ST2S", "STAV", "STD2A", "STHR", "STL"
     ]
 
-    // Celles qui demanderont un écran de spécialités ensuite
+    /// Celles qui demanderont potentiellement un écran de spécialités ensuite
     private let filieresAvecChoix: Set<String> = ["STMG", "STI2D", "S2TMD", "STAV", "STL"]
 
-    // Spécialités par défaut (si besoin d’initialiser côté UI)
-    private var defaultSpecialites: [String] {
-        guard let filiere = selectedFiliere else { return [] }
+    // ---- Defaults par filière/niveau ----
+    private func defaultSpecialites(for filiere: String, niveau: String) -> [String] {
+        let values: [String]
+
         switch filiere.uppercased() {
         case "STMG":
-            return niveau.lowercased() == "première"
+            values = isPremiere(niveau)
                 ? ["Droit et économie", "Management", "Sciences de gestion et du numérique"]
                 : ["Droit et économie"]
+
         case "ST2S":
-            return niveau.lowercased() == "première"
-                ? ["Physique chimie pour la santé", "Biologie et physiopathologie humaines", "Sciences et techniques sanitaires et sociales"]
-                : ["Sciences et techniques sanitaires et sociales", "Chimie, biologie et physiopathologie humaines"]
+            values = isPremiere(niveau)
+                ? ["Physique chimie pour la santé",
+                   "Biologie et physiopathologie humaines",
+                   "Sciences et techniques sanitaires et sociales"]
+                : ["Sciences et techniques sanitaires et sociales",
+                   "Chimie, biologie et physiopathologie humaines"]
+
         case "STHR":
-            return ["Économie et gestion hôtelière", "Sciences et technologies culinaires"]
+            values = ["Économie et gestion hôtelière", "Sciences et technologies culinaires"]
+
         case "STD2A":
-            return niveau.lowercased() == "première"
+            values = isPremiere(niveau)
                 ? ["Physique-chimie", "Outils et langages numériques", "Design et métiers d’art"]
                 : ["Analyse et méthodes en design", "Conception et création en design et métiers d’art"]
+
         case "STAV":
-            return niveau.lowercased() == "première"
+            values = isPremiere(niveau)
                 ? ["Gestion des ressources et de l'alimentation", "Territoires et sociétés"]
                 : ["Gestion des ressources et de l'alimentation"]
+
         case "S2TMD":
-            return ["Économie, droit et environnement du spectacle vivant"]
+            values = ["Économie, droit et environnement du spectacle vivant"]
+
         case "STL":
-            return ["Biotechnologies", "Sciences physiques et chimiques en laboratoire"]
+            values = ["Biotechnologies", "Sciences physiques et chimiques en laboratoire"]
+
         default:
-            return []
+            values = []
         }
+
+        // ✅ Return sanitized versions: accents stripped, apostrophes removed
+        return values.map { $0.sanitizedFR }
     }
 
     var body: some View {
@@ -94,19 +120,23 @@ struct SelectFiliereView: View {
                 .padding(.bottom, 12)
             }
 
-            // Navigation
+            // -> vers écran spécialités complémentaires
             NavigationLink(
-                destination: SelectSpecialitesView(
-                    progress: $progress,
-                    niveau: niveau,
-                    voie: "Technologique",
-                    filiere: selectedFiliere
-                ) { _ in }
-                .environmentObject(authVM),
+                destination: {
+                    SelectSpecialitesView(
+                        progress: $progress,
+                        niveau: niveau,
+                        voie: "Technologique",
+                        filiere: selectedFiliere ?? "",
+                        preselectedDefaults: defaultSpecialites(for: selectedFiliere ?? "", niveau: niveau) // << pass defaults
+                    )
+                    .environmentObject(authVM)
+                }(),
                 isActive: $goToSpecialites
             ) { EmptyView() }
             .hidden()
 
+            // -> sinon on passe à la suite
             NavigationLink(
                 destination: SelectAcademieView(progress: $progress)
                     .environmentObject(authVM),
@@ -152,7 +182,6 @@ struct SelectFiliereView: View {
     // MARK: - Actions
 
     private func preloadState() {
-        // Si déjà défini côté backend, on re-sélectionne pour une UX fluide
         if let existing = authVM.filiere, !existing.isEmpty {
             selectedFiliere = existing
             progress = max(progress, 0.5)
@@ -165,24 +194,26 @@ struct SelectFiliereView: View {
 
     private func saveAndNavigate() {
         guard let filiere = selectedFiliere else { return }
-        let specialitesList = defaultSpecialites
+        let defaults = defaultSpecialites(for: filiere, niveau: niveau)
         isSaving = true
 
-        // MàJ du profil avec filière (+ spécialités par défaut si vous souhaitez préremplir)
+        // MàJ du profil avec filière + defaults (préremplis)
         authVM.updateUserFields([
             "filiere": filiere,
-            "specialites": specialitesList
+            "specialites": defaults
         ]) { result in
             isSaving = false
             switch result {
             case .success:
                 authVM.filiere = filiere
-                authVM.specialites = specialitesList
+                authVM.specialites = defaults
                 withAnimation {
                     progress = max(progress, 0.55)
                     if filieresAvecChoix.contains(filiere.uppercased()) {
+                        // L’écran suivant masquera les defaults et proposera le complément
                         goToSpecialites = true
                     } else {
+                        // Tout est déjà couvert par la filière choisie
                         goToEtablissement = true
                     }
                 }
@@ -192,26 +223,41 @@ struct SelectFiliereView: View {
         }
     }
 }
-
-// MARK: - Preview
+import SwiftUI
 
 struct SelectFiliereView_Previews: PreviewProvider {
-    struct Wrapper: View {
+    struct Demo: View {
         @State private var progress: Double = 0.5
         @StateObject var authVM = AuthViewModel1()
+        let niveau: String
+        let prefilledFiliere: String?
 
         var body: some View {
             NavigationStack {
-                SelectFiliereView(progress: $progress, niveau: "Terminale")
+                SelectFiliereView(progress: $progress, niveau: niveau)
                     .environmentObject(authVM)
+                    .onAppear {
+                        // simulate prefilled filière (optional)
+                        authVM.filiere = prefilledFiliere
+                    }
             }
         }
     }
 
     static var previews: some View {
         Group {
-            Wrapper().preferredColorScheme(.light)
-            Wrapper().preferredColorScheme(.dark)
+            Demo(niveau: "Première",  prefilledFiliere: nil)
+                .previewDisplayName("Première — fresh")
+
+            Demo(niveau: "Terminale", prefilledFiliere: nil)
+                .previewDisplayName("Terminale — fresh")
+
+            Demo(niveau: "Première",  prefilledFiliere: "STMG")
+                .previewDisplayName("Première — prefilled STMG")
+
+            Demo(niveau: "Terminale", prefilledFiliere: "STI2D")
+                .preferredColorScheme(.dark)
+                .previewDisplayName("Terminale — prefilled STI2D (Dark)")
         }
     }
 }

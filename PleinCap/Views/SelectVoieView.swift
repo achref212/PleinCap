@@ -32,17 +32,19 @@ struct SelectVoieView: View {
 
                 // Navigation branches (hidden links)
                 NavigationLink(
-                    destination: SelectSpecialitesView(
-                        progress: $progress,
-                        niveau: niveau,
-                        voie: "Générale",
-                        filiere: nil
-                    ) { _ in }
-                    .environmentObject(authVM),
-                    isActive: $goToSpecialitesGeneral,
-                    label: { EmptyView() }
-                )
-                .hidden()
+                                   destination:
+                                       SelectSpecialitesView(
+                                           progress: $progress,
+                                           niveau: niveau,
+                                           voie: "Générale",
+                                           filiere: "",                 // ✅ use empty string for Générale
+                                           preselectedDefaults: []      // ✅ no defaults at this step
+                                       )
+                                       .environmentObject(authVM),
+                                   isActive: $goToSpecialitesGeneral,
+                                   label: { EmptyView() }
+                               )
+                               .hidden()
 
                 NavigationLink(
                     destination: SelectFiliereView(

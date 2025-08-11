@@ -19,13 +19,16 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
         manager.desiredAccuracy = kCLLocationAccuracyBest
         manager.requestWhenInUseAuthorization()
         manager.startUpdatingLocation()
+        if manager.authorizationStatus == .authorizedAlways || manager.authorizationStatus == .authorizedWhenInUse {
+                    manager.startUpdatingLocation()
+                }
     }
 
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-        guard let loc = locations.last else { return }
-        DispatchQueue.main.async {
-            self.userLocation = loc
-        }
+        guard let latest = locations.last else { return }
+        userLocation = latest
+        // Keep updates lightweight; no need for constant GPS drain:
+        manager.stopUpdatingLocation()
     }
 
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
@@ -37,4 +40,26 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
             isAuthorized = false
         }
     }
+    func requestAuthorizationIfNeeded() {
+           switch manager.authorizationStatus {
+           case .notDetermined:
+               manager.requestWhenInUseAuthorization()
+           case .authorizedAlways, .authorizedWhenInUse:
+               manager.startUpdatingLocation()
+           case .denied, .restricted:
+               // Optional: present a “Open Settings” flow
+               break
+           @unknown default:
+               break
+           }
+       }
+
+
+    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        // You can log / surface if you want
+        print("Location error:", error.localizedDescription)
+    }
+    
 }
+
+

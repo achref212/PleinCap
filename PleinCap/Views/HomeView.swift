@@ -88,8 +88,10 @@ struct HomeView: View {
                 progress: $progress,
                 niveau: authVM1.niveauScolaire ?? "Terminale",
                 voie: "GÉNÉRALE",
-                filiere: "GÉNÉRALE"
-            ) { _ in }
+                filiere: "GÉNÉRALE",
+                preselectedDefaults: []      // ✅ no defaults at this step
+
+            )
             .environmentObject(authVM1)
 
         } else if authVM1.voie == "Technologique" && (authVM1.filiere?.isEmpty ?? true) {
@@ -104,8 +106,10 @@ struct HomeView: View {
                 progress: $progress,
                 niveau: authVM1.niveauScolaire ?? "Terminale",
                 voie: "Technologique",
-                filiere: authVM1.filiere
-            ) { _ in }
+                filiere: authVM1.filiere!,
+                preselectedDefaults: []      // ✅ no defaults at this step
+
+            )
             .environmentObject(authVM1)
 
         // 🔰 LOCATION FLOW — go to ACADEMY FIRST (that screen pushes to Etablissements)

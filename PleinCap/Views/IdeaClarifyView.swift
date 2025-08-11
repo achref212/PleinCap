@@ -33,7 +33,7 @@ struct GeminiService {
             throw NSError(domain: "Gemini", code: -1, userInfo: [NSLocalizedDescriptionKey: "Clé Gemini manquante."])
         }
 
-        let endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=\(apiKey)"
+        let endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=\(apiKey)"
 
         let instructions =
         """
