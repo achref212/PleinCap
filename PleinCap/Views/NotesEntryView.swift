@@ -7,18 +7,22 @@
 
 import SwiftUI
 
+// MARK: - Sanitizer (same contract as the rest of the app)
+
+
 struct NoteRow: Identifiable, Hashable {
     let id = UUID()
-    let subject: String
-    var averageText: String = ""     // required, /20
-    var rankText: String = ""        // optional, integer
+    let subject: String                 // display label (can be sanitized already)
+    var averageText: String = ""        // required (/20)
+    var rankText: String = ""           // optional (Int)
 }
 
 struct NotesEntryView: View {
     @EnvironmentObject var authVM: AuthViewModel1
+    @Environment(\.dismiss) private var dismiss
 
     @Binding var progress: Double
-    var onSaved: (() -> Void)? = nil
+    var onSaved: (() -> Void)? = nil    // optional callback
 
     @State private var rows: [NoteRow] = []
     @State private var isSaving = false
@@ -26,7 +30,7 @@ struct NotesEntryView: View {
 
     var body: some View {
         VStack(spacing: 20) {
-            // header
+            // Header
             VStack(alignment: .leading, spacing: 8) {
                 Text("Notes et classements")
                     .font(.title3.bold())
@@ -38,7 +42,7 @@ struct NotesEntryView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal)
 
-            // card with fields
+            // Fields
             ScrollView {
                 VStack(spacing: 18) {
                     ForEach($rows) { $row in
@@ -60,8 +64,11 @@ struct NotesEntryView: View {
                     .padding(.horizontal)
             }
 
-            // save
-            PrimaryGradientButton(title: isSaving ? "Enregistrement…" : "Enregistrer", enabled: canSave && !isSaving) {
+            // Save
+            PrimaryGradientButton(
+                title: isSaving ? "Enregistrement…" : "Appliquer",
+                enabled: canSave && !isSaving
+            ) {
                 Task { await save() }
             }
             .padding(.horizontal)
@@ -74,27 +81,29 @@ struct NotesEntryView: View {
     // MARK: - Bootstrap
 
     private func bootstrapFromUser() {
-        // Take specialties from the user; fall back to empty.
-        // If you also store existing notes, prefill them here.
-        let specialites = authVM.specialites ?? []
+        // Use user's specialties; keep as-is for display.
+        let subjects = (authVM.specialites ?? []).unique()
+        rows = subjects.map { NoteRow(subject: $0) }
 
-        // If there are NO specialties, you can decide to show defaults:
-        // let fallback = ["Français", "Maths"]
-        // let subjects = specialites.isEmpty ? fallback : specialites
-        let subjects = specialites
-
-        rows = subjects.unique().map { NoteRow(subject: $0) }
+        // If you already store notes, you could prefill here by reading authVM.userProfile?.notes
+        // and matching on subject_key/subject_label.
     }
 
     // MARK: - Validation
 
+    private func normalizedDouble(_ text: String) -> Double? {
+        let t = text.replacingOccurrences(of: ",", with: ".")
+                     .trimmingCharacters(in: .whitespacesAndNewlines)
+        return Double(t)
+    }
+
     private var canSave: Bool {
-        // every row must have valid average 0...20
+        guard !rows.isEmpty else { return false }
         for r in rows {
-            guard let avg = Double(r.averageText), (0...20).contains(avg) else { return false }
+            guard let avg = normalizedDouble(r.averageText), (0.0...20.0).contains(avg) else { return false }
             if !r.rankText.isEmpty && Int(r.rankText) == nil { return false }
         }
-        return !rows.isEmpty
+        return true
     }
 
     // MARK: - Save
@@ -105,26 +114,28 @@ struct NotesEntryView: View {
         errorMessage = nil
         defer { isSaving = false }
 
-        // Build array of dictionaries: [{subject, average, rank?}]
+        // Build payload. We keep both a human label and a backend-safe key.
         let payload: [[String: Any]] = rows.map { r in
-            var d: [String: Any] = [
-                "subject": r.subject,
-                "average": Double(r.averageText) ?? 0.0
+            var dict: [String: Any] = [
+                "subject_label": r.subject,
+                "subject_key": r.subject.sanitizedFR,
+                "average": normalizedDouble(r.averageText) ?? 0.0
             ]
-            if let rank = Int(r.rankText) { d["rank"] = rank }
-            return d
+            if let rk = Int(r.rankText) { dict["rank"] = rk }
+            return dict
         }
 
         await withCheckedContinuation { cont in
             authVM.updateUserFields(["notes": payload]) { result in
                 switch result {
                 case .success:
-                    // bump progress and return
-                    withAnimation { progress = max(progress, 0.4) }
+                    withAnimation { progress = max(progress, 0.40) }
                     onSaved?()
+                    // pop back to NotesIntroView
+                    dismiss()
                     cont.resume()
                 case .failure(let err):
-                    errorMessage = "Impossible d’enregistrer: \(err.localizedDescription)"
+                    errorMessage = "Impossible d’enregistrer : \(err.localizedDescription)"
                     cont.resume()
                 }
             }
@@ -163,7 +174,7 @@ private struct NoteFieldCard: View {
                     .font(.headline)
                     .foregroundColor(Color(hex: "#1F3552"))
 
-                TextField("Ex 5", text: $row.rankText)
+                TextField("Ex: 5", text: $row.rankText)
                     .keyboardType(.numberPad)
                     .padding()
                     .background(

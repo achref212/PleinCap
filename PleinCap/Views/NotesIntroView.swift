@@ -111,8 +111,12 @@ struct NotesIntroView: View {
         .background(
             Group {
                 NavigationLink(isActive: $goToEntry) {
-                    NotesEntryView(progress: $progress)
-                        .environmentObject(authVM)
+                    NotesEntryView(progress: $progress) {
+                        // Child notifies when saved successfully
+                        withAnimation { progress = max(progress, 0.40) }
+                        goToEntry = false
+                    }
+                    .environmentObject(authVM)
                 } label: { EmptyView() }
                 .hidden()
 

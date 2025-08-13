@@ -64,11 +64,11 @@ struct EstimatedBudgetView: View {
                                 .fill(Color(.secondarySystemBackground))
                         )
 
-                    // Big white pill button
+                    // Big white pill button (Skip)
                     Button {
                         UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        // User chooses to skip -> don't update budget, just continue
                         withAnimation {
+                            // skip without saving
                             goNext = true
                         }
                     } label: {
@@ -97,7 +97,7 @@ struct EstimatedBudgetView: View {
                 )
                 .padding(.horizontal)
 
-                // Primary continue
+                // Primary continue (Save + go next)
                 PrimaryGradientButton(
                     title: isSaving ? "Enregistrement..." : "Suivant",
                     enabled: canSave && !isSaving
@@ -106,10 +106,10 @@ struct EstimatedBudgetView: View {
                 }
                 .padding(.horizontal)
 
-                // Nav to next screen in your flow
-                NavigationLink(destination: PlanGenerationView(), isActive: $goNext) {
-                    EmptyView()
-                }
+                // 👉 Navigate to PreferenceQuestionsView
+                NavigationLink(isActive: $goNext) {
+                    PreferenceQuestionsView(progress: $progress).environmentObject(authVM)
+                } label: { EmptyView() }
                 .hidden()
             }
             .padding(.bottom, 20)
@@ -118,7 +118,6 @@ struct EstimatedBudgetView: View {
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
-            // Prefill if user already has a budget
             if let b = authVM.budget, !b.isEmpty { budgetText = b }
             progress = max(progress, 0.30)
         }
@@ -135,9 +134,8 @@ struct EstimatedBudgetView: View {
         let raw = budgetText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !raw.isEmpty else { return }
 
-        // Sanitize: keep digits, comma, dot. Store as string (your DB column is varchar)
+        // Keep digits, comma, dot; store as varchar
         var sanitized = raw.replacingOccurrences(of: "[^0-9.,]", with: "", options: .regularExpression)
-        // Normalize comma to dot (optional)
         sanitized = sanitized.replacingOccurrences(of: ",", with: ".")
 
         isSaving = true
@@ -149,13 +147,17 @@ struct EstimatedBudgetView: View {
                     self.authVM.budget = sanitized
                     withAnimation { self.goNext = true }
                 case .failure(let error):
-                    self.authVM.errorMessage = ErrorMessage(message: "Échec de l’enregistrement du budget : \(error.localizedDescription)")
+                    self.authVM.errorMessage = ErrorMessage(
+                        message: "Échec de l’enregistrement du budget : \(error.localizedDescription)"
+                    )
                 }
                 cont.resume()
             }
         }
     }
 }
+
+// MARK: - Preview
 
 struct EstimatedBudgetView_Previews: PreviewProvider {
     struct Wrapper: View {

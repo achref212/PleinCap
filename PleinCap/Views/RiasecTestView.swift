@@ -1,132 +1,145 @@
 import SwiftUI
 
 struct RiasecTestView: View {
+    @Environment(\.dismiss) private var dismiss
     @StateObject var viewModel = RiasecViewModel()
-    @Namespace var topID
+
+    @State private var showResumePrompt = false
+    @State private var showCheckpointDialog = false
+
+    @Namespace private var topID
 
     var body: some View {
         VStack(spacing: 12) {
-            ProgressBarView(progress: Binding(
-                get: {
-                    Double(viewModel.currentIndex) / Double(viewModel.questions.count)
-                }, set: { _ in }
-            ))
+            ProgressBarView(progress: .constant(viewModel.progress))
+                .padding(.top, 4)
 
             if viewModel.currentIndex < viewModel.questions.count {
-                let questions = viewModel.getCurrentBatch()
+                let batch = viewModel.getCurrentBatch()
+
                 ScrollViewReader { proxy in
                     ScrollView {
                         VStack(spacing: 24) {
                             Color.clear.frame(height: 0).id(topID)
 
-                            if questions.first?.kind == .choice, questions.count == 2 {
-                                let traits = extractTrait(from: questions[0].text)
-                                InstructionCardView(text: "Indique le domaine dans lequel tu te sens le plus capable dans la colonne de droite et le domaine dans lequel tu te sens le moins compétent dans la colonne de gauche")
-                                ForEach(0..<questions[0].options.count, id: \ .self) { i in
+                            // Section heading based on first question
+                            if let first = batch.first {
+                                switch first.kind {
+                                case .single:
+                                    InstructionCardView(text: "Pour chacune des propositions suivantes, choisis l’appréciation qui te correspond le mieux.")
+                                case .adjective:
+                                    InstructionCardView(text: "Voici une liste d’adjectifs. Choisis 2 adjectifs qui te ressemblent le plus (tel(le) que tu es).")
+                                case .choice:
+                                    InstructionCardView(text: "Indique pour chaque domaine celui où tu te sens le plus capable (droite) et le moins compétent (gauche).")
+                                }
+                            }
+
+                            // Choice pair (left/right) layout
+                            if batch.first?.kind == .choice, batch.count == 2 {
+                                let traits = extractTrait(from: batch[0].text)
+                                ForEach(0..<batch[0].options.count, id: \.self) { i in
                                     DomainCompetenceRow(
-                                        domain: questions[0].options[i],
+                                        domain: batch[0].options[i],
                                         leftQuestion: "Je me sens le \(traits.left)",
                                         rightQuestion: "Je me sens le \(traits.right)",
-                                        isLeftSelected: viewModel.answers[questions[0].id]?.contains(i) ?? false,
-                                        isRightSelected: viewModel.answers[questions[1].id]?.contains(i) ?? false,
-                                        onLeftTap: {
-                                            viewModel.registerAnswer(for: questions[0].id, indices: [i])
-                                        },
-                                        onRightTap: {
-                                            viewModel.registerAnswer(for: questions[1].id, indices: [i])
-                                        }
+                                        isLeftSelected: viewModel.answers[batch[0].id]?.contains(i) ?? false,
+                                        isRightSelected: viewModel.answers[batch[1].id]?.contains(i) ?? false,
+                                        onLeftTap: { viewModel.registerAnswer(for: batch[0].id, indices: [i]) },
+                                        onRightTap: { viewModel.registerAnswer(for: batch[1].id, indices: [i]) }
                                     )
                                 }
                             } else {
-                                if let first = questions.first {
-                                    if first.kind == .single {
-                                        InstructionCardView(text: "Pour chacune des propositions suivantes, choisis l'appréciation qui correspond à ce que tu penses de toi")
-                                    } else if first.kind == .adjective {
-                                        InstructionCardView(text: "Voici une liste d'adjectifs. Choisis 2 adjectifs qui te ressemblent le plus tel(le) que tu es et non pas tel(le) que tu voudrais être.")
-                                    }
-                                }
-                                ForEach(questions) { question in
-                                    QuestionViewDispatcher(question: question, viewModel: viewModel) { selectedIndices in
-                                        viewModel.registerAnswer(for: question.id, indices: selectedIndices)
+                                // Singles & adjectives
+                                ForEach(batch) { question in
+                                    QuestionViewDispatcher(question: question, viewModel: viewModel) { indices in
+                                        viewModel.registerAnswer(for: question.id, indices: indices)
                                     }
                                 }
                             }
                         }
-                        .padding()
+                        .padding(.horizontal)
+                        .padding(.bottom, 8)
                     }
                     .onChange(of: viewModel.currentIndex) { _ in
-                        withAnimation {
-                            proxy.scrollTo(topID, anchor: .top)
-                        }
+                        withAnimation { proxy.scrollTo(topID, anchor: .top) }
                     }
                 }
 
-                let answeredAll = questions.allSatisfy { viewModel.answers[$0.id]?.isEmpty == false }
-                PrimaryGradientButton(title: "Suivant", enabled: answeredAll) {
+                // Footer Next
+                let allAnswered = batch.allSatisfy { !(viewModel.answers[$0.id] ?? []).isEmpty }
+                PrimaryGradientButton(title: "Suivant", enabled: allAnswered) {
                     viewModel.advance()
+                    if viewModel.shouldShowCheckpoint { showCheckpointDialog = true }
                 }
-                .padding()
+                .padding(.horizontal)
+                .padding(.bottom, 12)
             } else {
+                // ✅ Test finished — show results (save to backend outside this screen).
                 ResultView(scores: viewModel.scores)
+
+                PrimaryGradientButton(title: "Terminer", enabled: true) {
+                    // Clear checkpoint so next run starts fresh
+                    viewModel.clearCheckpoint()
+                    dismiss()
+                }
+                .padding(.horizontal)
+                .padding(.bottom, 16)
             }
         }
         .background(CircleBackgroundBottomView())
+        .navigationTitle("Test RIASEC")
+        .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            // Offer resume if we have a checkpoint and we’re at the very beginning
+            if viewModel.checkpointExists() && viewModel.answeredCount == 0 && viewModel.currentIndex == 0 {
+                showResumePrompt = true
+            }
+        }
+        // Resume prompt (when opening the test again)
+        .confirmationDialog("Reprendre là où tu t’es arrêté(e) ?", isPresented: $showResumePrompt, titleVisibility: .visible) {
+            Button("Reprendre") {
+                viewModel.tryRestoreCheckpoint()
+            }
+            Button("Recommencer", role: .destructive) {
+                viewModel.clearCheckpoint()
+                viewModel.resetRun()
+            }
+            Button("Annuler", role: .cancel) {}
+        } message: {
+            Text("Nous avons retrouvé ta progression précédente.")
+        }
+        // Checkpoint dialog (every 10 réponses)
+        .confirmationDialog("Sauvegarder ta progression et revenir plus tard ?", isPresented: $showCheckpointDialog, titleVisibility: .visible) {
+            Button("Sauvegarder & quitter") {
+                viewModel.persistCheckpoint()
+                dismiss()
+            }
+            Button("Continuer") { /* just close the dialog */ }
+            Button("Annuler", role: .cancel) {}
+        } message: {
+            Text("Ta progression sera conservée sur cet appareil.")
+        }
     }
 }
 
-func extractTrait(from text: String, defaultPositive: String = "plus capable", defaultNegative: String = "moins compétent") -> (left: String, right: String) {
+// MARK: - Helpers already used in your code
+
+func extractTrait(from text: String,
+                  defaultPositive: String = "plus capable",
+                  defaultNegative: String = "moins compétent") -> (left: String, right: String) {
     let isPositive = text.contains("plus") || text.contains("+")
     let isNegative = text.contains("moins") || text.contains("-")
 
-    if let rangeStart = text.range(of: "sens le "),
-       let rangeEnd = text.range(of: " en", range: rangeStart.upperBound..<text.endIndex) {
-        let trait = text[rangeStart.upperBound..<rangeEnd.lowerBound].trimmingCharacters(in: .whitespacesAndNewlines)
-        if isPositive {
-            return (left: defaultNegative, right: trait)
-        } else if isNegative {
-            return (left: trait, right: defaultPositive)
-        }
+    if let start = text.range(of: "sens le "),
+       let end = text.range(of: " en", range: start.upperBound..<text.endIndex) {
+        let trait = text[start.upperBound..<end.lowerBound].trimmingCharacters(in: .whitespacesAndNewlines)
+        if isPositive { return (defaultNegative, trait) }
+        if isNegative { return (trait, defaultPositive) }
     }
-    return (left: defaultNegative, right: defaultPositive)
+    return (defaultNegative, defaultPositive)
 }
 
-extension RiasecViewModel {
-    func getCurrentBatch() -> [Question] {
-        let current = currentIndex
-        if current >= questions.count { return [] }
-        let kind = questions[current].kind
-        if kind == .single {
-            return Array(questions[current..<min(current + 5, questions.count)])
-        } else if kind == .choice {
-            return Array(questions[current..<min(current + 2, questions.count)])
-        } else {
-            return [questions[current]]
-        }
-    }
-
-    func advance() {
-        let kind = questions[currentIndex].kind
-        if kind == .single {
-            currentIndex += 5
-        } else if kind == .choice {
-            currentIndex += 2
-        } else {
-            currentIndex += 1
-        }
-    }
-
-    func registerAnswer(for id: Int, indices: [Int]) {
-        answers[id] = indices
-        guard let question = questions.first(where: { $0.id == id }) else { return }
-        for i in indices {
-            let letter = question.correctLetters[i] ?? ""
-            if !letter.isEmpty {
-                scores[letter, default: 0] += 1
-            }
-        }
-    }
-}
-
+// Dispatch single/adjective question UIs
 struct QuestionViewDispatcher: View {
     let question: Question
     @ObservedObject var viewModel: RiasecViewModel
@@ -142,18 +155,15 @@ struct QuestionViewDispatcher: View {
             )
         case .adjective:
             VStack(spacing: 12) {
-                ForEach(question.options.indices, id: \ .self) { i in
+                ForEach(question.options.indices, id: \.self) { i in
                     AdjectiveCardView(
                         adjective: question.options[i],
                         isSelected: viewModel.answers[question.id]?.contains(i) ?? false,
                         onTap: {
-                            var current = Set(viewModel.answers[question.id] ?? [])
-                            if current.contains(i) {
-                                current.remove(i)
-                            } else if current.count < 2 {
-                                current.insert(i)
-                            }
-                            viewModel.registerAnswer(for: question.id, indices: Array(current))
+                            var set = Set(viewModel.answers[question.id] ?? [])
+                            if set.contains(i) { set.remove(i) }
+                            else if set.count < 2 { set.insert(i) }
+                            onAnswer(Array(set))
                         }
                     )
                 }

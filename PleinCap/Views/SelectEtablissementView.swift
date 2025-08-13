@@ -42,7 +42,6 @@ struct SelectEtablissementView: View {
 
             Spacer(minLength: 8)
 
-            // Programmatic nav
             NavigationLink(
                 destination: LocationPreferenceView(initialProgress: progress)
                     .environmentObject(authVM),
@@ -56,23 +55,17 @@ struct SelectEtablissementView: View {
         .navigationTitle("Établissements – \(academie.name)")
         .navigationBarTitleDisplayMode(.inline)
         .task(id: academie.id) {
-            dirVM.pageSize = 4
-            if dirVM.etablissements.isEmpty || dirVM.selectedAcademie?.id != academie.id {
+            // Only fetch if we weren’t injected with data (previews)
+            if dirVM.etablissements.isEmpty {
                 dirVM.fetchEtablissements(in: academie)
             }
         }
-        .refreshable { dirVM.fetchEtablissements(in: academie) }
-        .onChange(of: dirVM.searchText) { _ in
-            // New search -> go back to page 0 safely
-            dirVM.currentPage = 0
-        }
-        .onChange(of: dirVM.filteredEtablissements.count) { _ in
-            clampPageToBounds()
-        }
         .alert(item: $dirVM.errorMessage) { error in
-            Alert(title: Text("Erreur"),
-                  message: Text(error.message),
-                  dismissButton: .default(Text("OK")))
+            Alert(
+                title: Text("Erreur"),
+                message: Text(error.message),
+                dismissButton: .default(Text("OK"))
+            )
         }
     }
 
@@ -129,22 +122,15 @@ struct SelectEtablissementView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             resultsMeta
-            resultsList
-            if !dirVM.filteredEtablissements.isEmpty { paginationBar }
+            resultsList   // shows ALL results (no pagination)
         }
     }
 
     private var resultsMeta: some View {
         HStack {
-            if dirVM.filteredEtablissements.isEmpty {
-                Text("Aucun établissement trouvé.")
-                    .font(.footnote)
-                    .foregroundColor(.secondary)
-            } else {
-                Text("Résultats: \(dirVM.filteredEtablissements.count)  •  Page \(dirVM.currentPage + 1) / \(max(dirVM.totalPages, 1))")
-                    .font(.footnote)
-                    .foregroundColor(.secondary)
-            }
+            Text("Résultats: \(uniqueFiltered.count)")
+                .font(.footnote)
+                .foregroundColor(.secondary)
             Spacer()
         }
         .padding(.horizontal)
@@ -153,63 +139,25 @@ struct SelectEtablissementView: View {
     private var resultsList: some View {
         ScrollView {
             LazyVStack(spacing: 12) {
-                ForEach(uniquePageItems, id: \.id) { etab in
-                    EtablissementRow(
-                        etablissement: etab.displayName,
-                        subtitle: etab.city ?? "—",
-                        isSelected: dirVM.selectedEtablissement?.id == etab.id
-                    )
-                    .onTapGesture { dirVM.selectedEtablissement = etab }
-                    .padding(.horizontal)
+                if uniqueFiltered.isEmpty {
+                    Text("Aucun établissement trouvé pour « \(academie.name) ».")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                        .padding(.top, 8)
+                } else {
+                    ForEach(uniqueFiltered, id: \.id) { etab in
+                        EtablissementRow(
+                            etablissement: etab.displayName,
+                            subtitle: etab.city ?? "—",
+                            isSelected: dirVM.selectedEtablissement?.id == etab.id
+                        )
+                        .onTapGesture { dirVM.selectedEtablissement = etab }
+                        .padding(.horizontal)
+                    }
                 }
             }
             .padding(.vertical, 8)
         }
-        .frame(maxHeight: 360) // ~4 rows visible
-    }
-
-    private var paginationBar: some View {
-        HStack(spacing: 12) {
-            Button {
-                withAnimation { safePrevPage() }
-            } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "chevron.left")
-                    Text("Précédent")
-                }
-            }
-            .buttonStyle(.bordered)
-            .disabled(!(dirVM.currentPage > 0))
-
-            Spacer()
-
-            Text(rangeLabel)
-                .font(.footnote)
-                .foregroundColor(.secondary)
-
-            Spacer()
-
-            Button {
-                withAnimation { safeNextPage() }
-            } label: {
-                HStack(spacing: 6) {
-                    Text("Suivant")
-                    Image(systemName: "chevron.right")
-                }
-            }
-            .buttonStyle(.bordered)
-            .disabled(!(dirVM.currentPage + 1 < dirVM.totalPages))
-        }
-        .padding(.horizontal)
-        .padding(.bottom, 8)
-    }
-
-    private var rangeLabel: String {
-        let total = dirVM.filteredEtablissements.count
-        guard total > 0 else { return "0–0 sur 0" }
-        let start = max(0, dirVM.currentPage) * max(1, dirVM.pageSize)
-        let end = min(start + dirVM.pageSize, total)
-        return "\(min(start + 1, total))–\(end) sur \(total)"
     }
 
     private var applyButton: some View {
@@ -223,34 +171,12 @@ struct SelectEtablissementView: View {
         .padding(.bottom, 20)
     }
 
-    // MARK: - Paging helpers (defensive)
+    // MARK: - Data helpers
 
-    private var uniquePageItems: [Etablissement] {
-        dirVM.currentPageItems.unique(by: \.id)
+    /// Dedup to avoid ForEach duplicate-ID crashes.
+    private var uniqueFiltered: [Etablissement] {
+        dirVM.filteredEtablissements.unique(by: \.id)
     }
-
-    private func clampPageToBounds() {
-        let tp = dirVM.totalPages
-        if tp <= 0 {
-            dirVM.currentPage = 0
-        } else if dirVM.currentPage >= tp {
-            dirVM.currentPage = tp - 1
-        } else if dirVM.currentPage < 0 {
-            dirVM.currentPage = 0
-        }
-    }
-
-    private func safeNextPage() {
-        guard dirVM.currentPage + 1 < dirVM.totalPages else { return }
-        dirVM.nextPage()
-    }
-
-    private func safePrevPage() {
-        guard dirVM.currentPage > 0 else { return }
-        dirVM.previousPage()
-    }
-
-    // MARK: - Actions
 
     private func saveOnlyEtablissementAndProceed() async {
         guard let etab = dirVM.selectedEtablissement else { return }
@@ -344,22 +270,15 @@ struct SelectEtablissementView_Previews: PreviewProvider {
         @StateObject var authVM = AuthViewModel1()
 
         var body: some View {
-            let mock = DirectoryViewModel()
+            let mock = DirectoryViewModel() // no token needed for preview
             let seed: [Etablissement] = [
                 Etablissement(id: 1, academieId: 1, etablissement: "Lycée Jean Jaurès", city: "Reims",   sector: "Public", track: "Général"),
-                Etablissement(id: 2, academieId: 1, etablissement: "Lycée Jean Jaurès", city: "Reims",   sector: "Public", track: "Général"),
+                Etablissement(id: 2, academieId: 1, etablissement: "Lycée Jean Jaurès", city: "Reims",   sector: "Public", track: "Général"), // duplicate name ok
                 Etablissement(id: 3, academieId: 1, etablissement: "Lycée Marie Curie", city: "Reims",   sector: "Public", track: "Technologique"),
-                Etablissement(id: 4, academieId: 1, etablissement: "Lycée Victor Hugo", city: "Épernay", sector: "Privé",  track: "Général"),
-                Etablissement(id: 5, academieId: 1, etablissement: "Lycée Gutenberg",   city: "Reims",   sector: "Public", track: "Général"),
-                Etablissement(id: 6, academieId: 1, etablissement: "Lycée Blaise Pascal",city: "Reims",   sector: "Public", track: "Général"),
-                Etablissement(id: 7, academieId: 1, etablissement: "Lycée Diderot",     city: "Reims",   sector: "Public", track: "Général"),
-                Etablissement(id: 8, academieId: 1, etablissement: "Lycée Colbert",     city: "Reims",   sector: "Public", track: "Général"),
-                Etablissement(id: 9, academieId: 1, etablissement: "Lycée Carnot",      city: "Reims",   sector: "Public", track: "Général")
+                Etablissement(id: 4, academieId: 1, etablissement: "Lycée Victor Hugo", city: "Épernay", sector: "Privé",  track: "Général")
             ]
             mock.etablissements = seed
-            mock.filteredEtablissements = seed
-            mock.pageSize = 4
-            mock.currentPage = 0
+            mock.filteredEtablissements = seed   // no fetch in preview
 
             return NavigationStack {
                 SelectEtablissementView(
@@ -368,7 +287,7 @@ struct SelectEtablissementView_Previews: PreviewProvider {
                     authVM: authVM,
                     dirVM: mock
                 )
-                .environmentObject(authVM)
+                .environmentObject(authVM) // if next screens expect it
             }
         }
     }

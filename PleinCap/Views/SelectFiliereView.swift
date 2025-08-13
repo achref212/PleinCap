@@ -7,8 +7,10 @@ extension String {
         return folded
             .replacingOccurrences(of: "’", with: "")
             .replacingOccurrences(of: "'", with: "")
-    }
-}
+            .replacingOccurrences(of: "–", with: "-")
+            .replacingOccurrences(of: "—", with: "-")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }}
 
 struct SelectFiliereView: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize

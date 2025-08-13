@@ -2,29 +2,57 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>CFBundleURLTypes</key>
-    <array>
-        <dict>
-            <key>CFBundleTypeRole</key>
-            <string>Editor</string>
-            <key>CFBundleURLSchemes</key>
-            <array>
-                <string>com.googleusercontent.apps.1066400972443-dulk5ktb27tpdi56579qjojcjrcf2d9b</string>
-            </array>
-        </dict>
-    </array>
-    <key>FirebaseAppDelegateProxyEnabled</key>
-    <false/>
-    <key>LSApplicationQueriesSchemes</key>
-    <array>
-        <string>google</string>
-        <string>com-google-gidconsent</string>
-    </array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.1066400972443-dulk5ktb27tpdi56579qjojcjrcf2d9b</string>
+			</array>
+		</dict>
+	</array>
+	<key>FirebaseAppDelegateProxyEnabled</key>
+	<false/>
+	<key>GEMINI_API_KEY</key>
+	<string>$(GEMINI_API_KEY)</string>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>google</string>
+		<string>com-google-gidconsent</string>
+	</array>
+    <!-- ✨ ADD THIS: ATS exceptions for local/dev HTTP backends -->
+     <key>NSAppTransportSecurity</key>
+     <dict>
+       <!-- Easiest for dev. Remove for production, or set to false and keep only domain-specific exceptions below. -->
+       <key>NSAllowsArbitraryLoads</key>
+       <true/>
 
-    <!-- ✅ Splash screen storyboard -->
-    <key>UILaunchStoryboardName</key>
-    <string>Launch Screen</string>
-    <key>GEMINI_API_KEY</key>
-    <string>$(GEMINI_API_KEY)</string>
-</dict>
-</plist>
+       <!-- Domain-specific exceptions (keep these even if you disable arbitrary loads later) -->
+       <key>NSExceptionDomains</key>
+       <dict>
+         <!-- Simulator: localhost -->
+         <key>localhost</key>
+         <dict>
+           <key>NSExceptionAllowsInsecureHTTPLoads</key><true/>
+           <key>NSIncludesSubdomains</key><true/>
+         </dict>
+
+         <!-- Simulator: 127.0.0.1 -->
+         <key>127.0.0.1</key>
+         <dict>
+           <key>NSExceptionAllowsInsecureHTTPLoads</key><true/>
+           <key>NSIncludesSubdomains</key><true/>
+         </dict>
+
+         <!-- Real device: replace with your Mac’s LAN IP (add more entries if your IP changes) -->
+         <key>192.168.1.50</key>
+         <dict>
+           <key>NSExceptionAllowsInsecureHTTPLoads</key><true/>
+           <key>NSIncludesSubdomains</key><true/>
+         </dict>
+       </dict>
+     </dict>
+   </dict>
+   </plist>
