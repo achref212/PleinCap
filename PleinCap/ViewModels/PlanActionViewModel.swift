@@ -6,16 +6,15 @@
 //
 
 
-
 import Foundation
 import SwiftUI
-import Combine
 
 @MainActor
 final class PlanActionViewModel: ObservableObject {
 
     // MARK: - Dependencies
-    private weak var auth: AuthViewModel1?
+    weak var auth: AuthViewModel1?
+    func attachAuth(_ a: AuthViewModel1) { self.auth = a }
 
     // MARK: - Server data
     @Published var plan: PlanActionResponse? = nil
@@ -29,7 +28,7 @@ final class PlanActionViewModel: ObservableObject {
     @Published var lastRefreshedAt: Date? = nil
 
     // MARK: - Init
-    init(auth: AuthViewModel1?) {
+    init(auth: AuthViewModel1? = nil) {
         self.auth = auth
     }
 
@@ -39,7 +38,6 @@ final class PlanActionViewModel: ObservableObject {
 
     // MARK: - Public API
 
-    /// Pulls plan and progress in one go (safe to call onAppear)
     func refresh() {
         Task {
             await fetchPlan()
@@ -48,7 +46,6 @@ final class PlanActionViewModel: ObservableObject {
         }
     }
 
-    /// Fetch only the plan
     func fetchPlan() async {
         guard let token = token else {
             self.errorMessage = "Token manquant"
@@ -59,8 +56,6 @@ final class PlanActionViewModel: ObservableObject {
         do {
             let p = try await NetworkManager.shared.fetchUserPlan(token: token)
             self.plan = p
-
-            // Optionally mirror plan id back to auth.userProfile (handy for other screens)
             if var u = auth?.userProfile {
                 u.planActionId = p.id
                 auth?.userProfile = u
@@ -70,7 +65,6 @@ final class PlanActionViewModel: ObservableObject {
         }
     }
 
-    /// Fetch only the user progress
     func fetchProgress() async {
         guard let token = token, let uid = userId else {
             self.errorMessage = "Utilisateur non authentifié"
@@ -86,68 +80,23 @@ final class PlanActionViewModel: ObservableObject {
         }
     }
 
-    /// Toggle step completion state (done/undone)
-    func toggleStep(_ step: PlanStepResponse) {
-        let currentlyDone = progressByStepId[step.id]?.is_done ?? false
-        setStep(step, isDone: !currentlyDone)
-    }
+    func toggleStep(_ step: PlanStepResponse) { setStep(step, isDone: !(progressByStepId[step.id]?.is_done ?? false)) }
+    func markStepDone(_ step: PlanStepResponse) { setStep(step, isDone: true) }
+    func markStepUndone(_ step: PlanStepResponse) { setStep(step, isDone: false) }
 
-    /// Mark a step as done
-    func markStepDone(_ step: PlanStepResponse) {
-        setStep(step, isDone: true)
-    }
-
-    /// Mark a step as not done
-    func markStepUndone(_ step: PlanStepResponse) {
-        setStep(step, isDone: false)
-    }
-
-    // MARK: - Derived data for UI
+    // MARK: - Derived data
 
     var stepsSorted: [PlanStepResponse] {
-        (plan?.steps ?? []).sorted { lhs, rhs in
-            if lhs.ordre != rhs.ordre { return lhs.ordre < rhs.ordre }
-            return lhs.id < rhs.id
-        }
+        (plan?.steps ?? []).sorted { $0.ordre == $1.ordre ? $0.id < $1.id : $0.ordre < $1.ordre }
     }
-
     var totalSteps: Int { stepsSorted.count }
+    var completedCount: Int { stepsSorted.reduce(0) { $0 + ((progressByStepId[$1.id]?.is_done ?? false) ? 1 : 0) } }
+    var completionRatio: Double { totalSteps == 0 ? 0 : Double(completedCount) / Double(totalSteps) }
+    var completionPercentText: String { "\(Int((completionRatio * 100.0).rounded()))%" }
+    var doneSteps: [PlanStepResponse] { stepsSorted.filter { progressByStepId[$0.id]?.is_done ?? false } }
+    var pendingSteps: [PlanStepResponse] { stepsSorted.filter { !(progressByStepId[$0.id]?.is_done ?? false) } }
 
-    var completedCount: Int {
-        stepsSorted.reduce(0) { acc, step in
-            acc + ((progressByStepId[step.id]?.is_done ?? false) ? 1 : 0)
-        }
-    }
-
-    var completionRatio: Double {
-        guard totalSteps > 0 else { return 0.0 }
-        return Double(completedCount) / Double(totalSteps)
-    }
-
-    var completionPercentText: String {
-        let pct = Int((completionRatio * 100.0).rounded())
-        return "\(pct)%"
-    }
-
-    /// Steps grouped for convenience
-    var doneSteps: [PlanStepResponse] {
-        stepsSorted.filter { progressByStepId[$0.id]?.is_done ?? false }
-    }
-
-    var pendingSteps: [PlanStepResponse] {
-        stepsSorted.filter { !(progressByStepId[$0.id]?.is_done ?? false) }
-    }
-
-    var overdueSteps: [PlanStepResponse] {
-        let now = Date()
-        return stepsSorted.filter {
-            guard !(progressByStepId[$0.id]?.is_done ?? false),
-                  let end = parseDate($0.end_date) else { return false }
-            return end < now
-        }
-    }
-
-    // MARK: - Private helpers
+    // MARK: - Private
 
     private func setStep(_ step: PlanStepResponse, isDone: Bool) {
         guard let token = token, let uid = userId else {
@@ -155,27 +104,16 @@ final class PlanActionViewModel: ObservableObject {
             return
         }
         isMutatingStep = true
-
         Task {
             defer { isMutatingStep = false }
             do {
-                // If your API supports both PATCH and POST /done, prefer PATCH for toggling
                 let updated = try await NetworkManager.shared.updateStepCompletion(
-                    userId: uid,
-                    stepId: step.id,
-                    isDone: isDone,
-                    token: token
+                    userId: uid, stepId: step.id, isDone: isDone, token: token
                 )
-                // Update local cache
                 progressByStepId[step.id] = updated
             } catch {
                 self.errorMessage = "Échec mise à jour étape: \(error.localizedDescription)"
             }
         }
-    }
-
-    private func parseDate(_ s: String?) -> Date? {
-        guard let s = s else { return nil }
-        return DateParsers.parseTimestamp(s)
     }
 }

@@ -12,6 +12,7 @@ import SwiftData
 struct PleinCapApp: App {
     @AppStorage("selectedTheme") private var selectedTheme: String = AppColorScheme.system.rawValue
     @StateObject var locationManager = LocationManager()
+    @StateObject private var formationVM = FormationViewModel()
     @StateObject private var authVM = AuthViewModel1() // ✅ Important : @StateObject
     @State private var showSplash = true
 
@@ -28,7 +29,8 @@ struct PleinCapApp: App {
                                     HomeView()              // your actual root view
                                 }
                             }
-                .environmentObject(authVM) // ✅ Injecté ici globalement
+                .environmentObject(authVM)
+                .environmentObject(formationVM)
             }
         }
 }
