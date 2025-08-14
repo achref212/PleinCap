@@ -7,10 +7,11 @@ extension String {
         return folded
             .replacingOccurrences(of: "’", with: "")
             .replacingOccurrences(of: "'", with: "")
-            .replacingOccurrences(of: "–", with: "-")
-            .replacingOccurrences(of: "—", with: "-")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-    }}
+            .replacingOccurrences(of: "[^A-Za-z0-9]+", with: "_", options: .regularExpression)
+            .trimmingCharacters(in: CharacterSet(charactersIn: "_"))
+            .lowercased()
+    }
+}
 
 struct SelectFiliereView: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -67,7 +68,6 @@ struct SelectFiliereView: View {
         }
     }
 
-    // Pre-built destination keeps type-checking fast
     @ViewBuilder
     private var destinationSpecialites: some View {
         if let fil = selectedFiliere {
@@ -77,7 +77,7 @@ struct SelectFiliereView: View {
                 niveau: niveau,
                 voie: "Technologique",
                 filiere: fil,
-                preselectedDefaults: defaultsDisplay   // pass DISPLAY strings
+                preselectedDefaults: defaultsDisplay   // DISPLAY defaults (pre-checked)
             )
             .environmentObject(authVM)
         } else {
@@ -90,11 +90,8 @@ struct SelectFiliereView: View {
             VStack(spacing: 0) {
                 ScrollView {
                     VStack(spacing: 24) {
-                        ProgressBarView(progress: $progress)
-                            .padding(.top)
-
+                        ProgressBarView(progress: $progress).padding(.top)
                         ImageWithCaptionView(imageName: "filiere", caption: "Filière")
-
                         header
 
                         LazyVGrid(columns: [GridItem(.adaptive(minimum: 140), spacing: 16)], spacing: 16) {
@@ -123,17 +120,12 @@ struct SelectFiliereView: View {
                 .padding(.bottom, 12)
             }
 
-            // -> specialties screen when needed
-            NavigationLink(destination: destinationSpecialites, isActive: $goToSpecialites) { EmptyView() }
-                .hidden()
+            NavigationLink(destination: destinationSpecialites, isActive: $goToSpecialites) { EmptyView() }.hidden()
 
-            // -> else continue the flow
             NavigationLink(
-                destination: SelectAcademieView(progress: $progress)
-                    .environmentObject(authVM),
+                destination: SelectAcademieView(progress: $progress).environmentObject(authVM),
                 isActive: $goToEtablissement
-            ) { EmptyView() }
-            .hidden()
+            ) { EmptyView() }.hidden()
         }
         .background(Color(UIColor.systemGroupedBackground).ignoresSafeArea())
         .navigationTitle("Filière technologique")
@@ -160,8 +152,6 @@ struct SelectFiliereView: View {
         .padding(.horizontal)
     }
 
-    // MARK: - Actions
-
     private func preloadState() {
         if let existing = authVM.filiere, !existing.isEmpty {
             selectedFiliere = existing
@@ -175,24 +165,22 @@ struct SelectFiliereView: View {
 
     private func saveAndNavigate() {
         guard let filiere = selectedFiliere else { return }
-        let defaultsDisplay = defaultSpecialitesDisplay(for: filiere, niveau: niveau)
-        let defaultsSanitized = defaultsDisplay.map { $0.sanitizedFR }
+        let defaults = defaultSpecialitesDisplay(for: filiere, niveau: niveau).map { $0.sanitizedFR }
         isSaving = true
 
-        // Save filière + defaults (sanitized) to backend
         authVM.updateUserFields([
             "filiere": filiere,
-            "specialites": defaultsSanitized
+            "specialites": defaults
         ]) { result in
             isSaving = false
             switch result {
             case .success:
                 authVM.filiere = filiere
-                authVM.specialites = defaultsSanitized
+                authVM.specialites = defaults
                 withAnimation {
                     progress = max(progress, 0.55)
                     if filieresAvecChoix.contains(filiere.uppercased()) {
-                        goToSpecialites = true
+                        goToSpecialites = true   // ✅ always go let user review/modify
                     } else {
                         goToEtablissement = true
                     }

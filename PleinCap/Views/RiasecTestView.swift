@@ -2,17 +2,26 @@ import SwiftUI
 
 struct RiasecTestView: View {
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject var authVM: AuthViewModel1
     @StateObject var viewModel = RiasecViewModel()
 
-    @State private var showResumePrompt = false
-    @State private var showCheckpointDialog = false
+    // Navigation
+    @State private var goToDashboard = false
 
+    // Dialogs
+    @State private var showResumePrompt = false
+    @State private var showSinglesCheckpoint = false
+
+    // UI
     @Namespace private var topID
+    @State private var saving = false
+    @State private var errorMessage: String?
 
     var body: some View {
         VStack(spacing: 12) {
+            // Progress from VM
             ProgressBarView(progress: .constant(viewModel.progress))
-                .padding(.top, 4)
+                .padding(.top, 6)
 
             if viewModel.currentIndex < viewModel.questions.count {
                 let batch = viewModel.getCurrentBatch()
@@ -22,7 +31,7 @@ struct RiasecTestView: View {
                         VStack(spacing: 24) {
                             Color.clear.frame(height: 0).id(topID)
 
-                            // Section heading based on first question
+                            // Section hint
                             if let first = batch.first {
                                 switch first.kind {
                                 case .single:
@@ -34,7 +43,7 @@ struct RiasecTestView: View {
                                 }
                             }
 
-                            // Choice pair (left/right) layout
+                            // Choice-pair layout (two questions acting together)
                             if batch.first?.kind == .choice, batch.count == 2 {
                                 let traits = extractTrait(from: batch[0].text)
                                 ForEach(0..<batch[0].options.count, id: \.self) { i in
@@ -44,15 +53,15 @@ struct RiasecTestView: View {
                                         rightQuestion: "Je me sens le \(traits.right)",
                                         isLeftSelected: viewModel.answers[batch[0].id]?.contains(i) ?? false,
                                         isRightSelected: viewModel.answers[batch[1].id]?.contains(i) ?? false,
-                                        onLeftTap: { viewModel.registerAnswer(for: batch[0].id, indices: [i]) },
+                                        onLeftTap:  { viewModel.registerAnswer(for: batch[0].id, indices: [i]) },
                                         onRightTap: { viewModel.registerAnswer(for: batch[1].id, indices: [i]) }
                                     )
                                 }
                             } else {
                                 // Singles & adjectives
-                                ForEach(batch) { question in
-                                    QuestionViewDispatcher(question: question, viewModel: viewModel) { indices in
-                                        viewModel.registerAnswer(for: question.id, indices: indices)
+                                ForEach(batch) { q in
+                                    QuestionViewDispatcher(question: q, viewModel: viewModel) { selected in
+                                        viewModel.registerAnswer(for: q.id, indices: selected)
                                     }
                                 }
                             }
@@ -65,41 +74,48 @@ struct RiasecTestView: View {
                     }
                 }
 
-                // Footer Next
+                // Footer
                 let allAnswered = batch.allSatisfy { !(viewModel.answers[$0.id] ?? []).isEmpty }
                 PrimaryGradientButton(title: "Suivant", enabled: allAnswered) {
+                    // Advance pages (5 singles, 2 choice, 1 adjective)
                     viewModel.advance()
-                    if viewModel.shouldShowCheckpoint { showCheckpointDialog = true }
+
+                    // Ask checkpoint only when SINGLE-answered hits 10,20,30...
+                    if viewModel.shouldShowSinglesCheckpoint {
+                        showSinglesCheckpoint = true
+                    }
                 }
                 .padding(.horizontal)
                 .padding(.bottom, 12)
             } else {
-                // ✅ Test finished — show results (save to backend outside this screen).
-                ResultView(scores: viewModel.scores)
+                // Finished — show summary and save
+                ResultSummaryBlock(
+                    scores: viewModel.scores,
+                    onSave: { Task { await saveResultsAndGoHome() } },
+                    saving: saving
+                )
 
-                PrimaryGradientButton(title: "Terminer", enabled: true) {
-                    // Clear checkpoint so next run starts fresh
-                    viewModel.clearCheckpoint()
-                    dismiss()
-                }
-                .padding(.horizontal)
-                .padding(.bottom, 16)
+                // Hidden nav to dashboard
+                NavigationLink(isActive: $goToDashboard) {
+                    DashboardView().environmentObject(authVM)
+                } label: { EmptyView() }
+                .hidden()
             }
         }
         .background(CircleBackgroundBottomView())
         .navigationTitle("Test RIASEC")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
-            // Offer resume if we have a checkpoint and we’re at the very beginning
-            if viewModel.checkpointExists() && viewModel.answeredCount == 0 && viewModel.currentIndex == 0 {
+            // Offer resume only at the very beginning
+            if viewModel.checkpointExists(),
+               viewModel.currentIndex == 0,
+               viewModel.answeredCount == 0 {
                 showResumePrompt = true
             }
         }
-        // Resume prompt (when opening the test again)
+        // Resume previous local checkpoint
         .confirmationDialog("Reprendre là où tu t’es arrêté(e) ?", isPresented: $showResumePrompt, titleVisibility: .visible) {
-            Button("Reprendre") {
-                viewModel.tryRestoreCheckpoint()
-            }
+            Button("Reprendre") { viewModel.tryRestoreCheckpoint() }
             Button("Recommencer", role: .destructive) {
                 viewModel.clearCheckpoint()
                 viewModel.resetRun()
@@ -108,21 +124,121 @@ struct RiasecTestView: View {
         } message: {
             Text("Nous avons retrouvé ta progression précédente.")
         }
-        // Checkpoint dialog (every 10 réponses)
-        .confirmationDialog("Sauvegarder ta progression et revenir plus tard ?", isPresented: $showCheckpointDialog, titleVisibility: .visible) {
+        // Singles checkpoint (every 10 answered singles)
+        .confirmationDialog("Sauvegarder et revenir plus tard ?", isPresented: $showSinglesCheckpoint, titleVisibility: .visible) {
             Button("Sauvegarder & quitter") {
                 viewModel.persistCheckpoint()
-                dismiss()
+                dismiss() // back to previous screen
             }
-            Button("Continuer") { /* just close the dialog */ }
+            Button("Continuer") {
+                viewModel.markSinglesCheckpointShown()
+            }
             Button("Annuler", role: .cancel) {}
         } message: {
             Text("Ta progression sera conservée sur cet appareil.")
         }
+        .alert(item: Binding(
+            get: { errorMessage.map { ErrorMessage(message: $0) } },
+            set: { _ in errorMessage = nil })
+        ) { err in
+            Alert(title: Text("Erreur"),
+                  message: Text(err.message),
+                  dismissButton: .default(Text("OK")))
+        }
+    }
+
+    // MARK: - Save results to user
+
+    private func saveResultsAndGoHome() async {
+        guard !saving else { return }
+        saving = true
+        defer { saving = false }
+
+        // Raw scores (already computed in VM)
+        let raw = viewModel.scores
+
+        // Normalized (0–100) – adjust divisor if your test differs
+        let normalized = raw.mapValues { Int((Double($0) / 33.0) * 100.0) }
+
+        // Differentiation value + level
+        let sortedVals = raw.values.sorted(by: >)
+        let d1 = Double(sortedVals[safe: 0] ?? 0)
+        let d2 = Double(sortedVals[safe: 1] ?? 0)
+        let d3 = Double(sortedVals[safe: 2] ?? 0)
+        let d4 = Double(sortedVals[safe: 3] ?? 0)
+        let d5 = Double(sortedVals[safe: 4] ?? 0)
+
+        let differentiation = Int((d1 - ((d2 + d3) / 2.0)) + (d3 - ((d4 + d5) / 2.0)))
+        let level = differentiation >= 6 ? "FORTE" : (differentiation >= 3 ? "MOYENNE" : "FAIBLE")
+
+        // Top 3 letters (for convenience)
+        let top3 = raw.sorted { $0.value > $1.value }.prefix(3).map { $0.key }
+
+        let payload: [String: Any] = [
+            "riasec_scores": raw,                       // {"R": 5, "I": 3, ...}
+            "riasec_normalized": normalized,            // {"R": 45, ...}
+            "riasec_differentiation": [                 // was [null] before — now a JSON object
+                "value": differentiation,
+                "level": level,
+                "top": top3
+            ]
+        ]
+
+        await withCheckedContinuation { cont in
+            authVM.updateUserFields(payload) { result in
+                switch result {
+                case .success:
+                    // Clear local checkpoint since the run is done
+                    viewModel.clearCheckpoint()
+                    withAnimation { goToDashboard = true }
+                case .failure(let err):
+                    errorMessage = err.localizedDescription
+                }
+                cont.resume()
+            }
+        }
     }
 }
 
-// MARK: - Helpers already used in your code
+// MARK: - Helper views
+
+/// Small block used when the test is finished
+private struct ResultSummaryBlock: View {
+    let scores: [String: Int]
+    let onSave: () -> Void
+    let saving: Bool
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Text("Résultats RIASEC")
+                .font(.title2.bold())
+                .padding(.top)
+
+            // Light summary: top 3 poles
+            let top = scores.sorted { $0.value > $1.value }.prefix(3)
+            VStack(alignment: .leading, spacing: 8) {
+                ForEach(Array(top), id: \.key) { kv in
+                    HStack {
+                        Text(kv.key).font(.headline)
+                        Spacer()
+                        Text("\(kv.value)")
+                    }
+                    .padding(12)
+                    .background(RoundedRectangle(cornerRadius: 12).fill(Color(.secondarySystemBackground)))
+                }
+            }
+            .padding(.horizontal)
+
+            PrimaryGradientButton(title: saving ? "Enregistrement…" : "Enregistrer et revenir au tableau de bord",
+                                  enabled: !saving,
+                                  action: onSave)
+            .padding(.horizontal)
+            .padding(.bottom, 16)
+        }
+    }
+}
+
+// MARK: - Utilities you already have elsewhere
 
 func extractTrait(from text: String,
                   defaultPositive: String = "plus capable",
@@ -139,7 +255,7 @@ func extractTrait(from text: String,
     return (defaultNegative, defaultPositive)
 }
 
-// Dispatch single/adjective question UIs
+// Dispatcher for single/adjective UIs
 struct QuestionViewDispatcher: View {
     let question: Question
     @ObservedObject var viewModel: RiasecViewModel
@@ -174,44 +290,23 @@ struct QuestionViewDispatcher: View {
     }
 }
 
-struct ResultView: View {
-    let scores: [String: Int]
+// Safe array index
 
-    var rawScores: [String: Int] {
-        scores
-    }
 
-    var normalizedScores: [String: Int] {
-        scores.mapValues { Int((Double($0) / 33.0) * 100.0) }
-    }
+// MARK: - Preview (non-crashing)
 
-    var body: some View {
-        ScrollView {
-            VStack(spacing: 24) {
-                Text("Résultats RIASEC")
-                    .font(.title2.bold())
-                    .padding(.top)
-
-                RiasecProfileSummary(scores: scores)
-
-                RadarChartView(rawScores: rawScores, normalizedScores: normalizedScores)
-
-                HorizontalBarChartView(rawScores: rawScores, normalizedScores: normalizedScores)
+struct RiasecTestView_Previews: PreviewProvider {
+    struct Wrapper: View {
+        @StateObject var auth = AuthViewModel1()
+        var body: some View {
+            NavigationStack {
+                RiasecTestView()
+                    .environmentObject(auth)
             }
-            .padding(.bottom)
-        }
-        .background(CircleBackgroundBottomView())
-    }
-}
-
-struct ContentView0: View {
-    var body: some View {
-        NavigationView {
-            RiasecTestView()
         }
     }
-}
-
-#Preview {
-    ContentView0()
+    static var previews: some View {
+        Wrapper().preferredColorScheme(.light)
+        Wrapper().preferredColorScheme(.dark)
+    }
 }

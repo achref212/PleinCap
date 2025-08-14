@@ -9,6 +9,10 @@ final class RiasecViewModel: ObservableObject {
     @Published var scores: [String: Int] = ["R": 0,"I": 0,"A": 0,"S": 0,"E": 0,"C": 0]
     @Published var questions: [Question] = []
 
+    // --- Checkpoint for SINGLE questions only ---
+    private(set) var nextSinglesCheckpoint: Int = 10          // ask after 10, then 20, 30...
+    private let checkpointKey = "riasec_checkpoint_v1"
+
     // Init
     init() { loadQuestions() }
 
@@ -27,16 +31,29 @@ final class RiasecViewModel: ObservableObject {
         }
     }
 
+    // MARK: - Quick lookups
+
+    private var questionsByID: [Int: Question] {
+        Dictionary(uniqueKeysWithValues: questions.map { ($0.id, $0) })
+    }
+
     // MARK: - Progress
+
     var answeredCount: Int {
         questions.filter { !(answers[$0.id] ?? []).isEmpty }.count
     }
+
+    var singleAnsweredCount: Int {
+        questions.filter { $0.kind == .single && !(answers[$0.id] ?? []).isEmpty }.count
+    }
+
     var progress: Double {
         guard !questions.isEmpty else { return 0 }
         return Double(answeredCount) / Double(questions.count)
     }
 
     // MARK: - Batching used by the view
+
     func getCurrentBatch() -> [Question] {
         let idx = currentIndex
         guard idx < questions.count else { return [] }
@@ -57,55 +74,51 @@ final class RiasecViewModel: ObservableObject {
         case .choice:    currentIndex += 2
         case .adjective: currentIndex += 1
         }
-        bumpCheckpointIfNeeded()
+        // (We do NOT bump the checkpoint here. The view decides when to show the dialog,
+        // then calls `markSinglesCheckpointShown()` when the user continues.)
     }
 
     // MARK: - Answering / scoring
+
     func registerAnswer(for questionID: Int, indices: [Int]) {
         answers[questionID] = indices
 
-        // Recompute scores so edits never double-count
+        // Recompute safely so edits never double-count
         var newScores: [String: Int] = ["R": 0,"I": 0,"A": 0,"S": 0,"E": 0,"C": 0]
-
         for (qid, inds) in answers {
-            guard let q = questions.first(where: { $0.id == qid }) else { continue }
-
+            guard let q = questionsByID[qid] else { continue }
             for i in inds {
-                // If `correctLetters` is an Array<String>
-                if i >= 0 && i < q.correctLetters.count {
-                    let letter = q.correctLetters[i]
-                    if !letter.isEmpty {
-                        newScores[letter, default: 0] += 1
-                    }
+                let letter = q.correctLetters[i]
+                if !letter.isEmpty {
+                    newScores[letter, default: 0] += 1
                 }
-
-                // If in your model `correctLetters` is a Dictionary<Int, String>,
-                // use this instead (uncomment and remove the array branch above):
-                // if let letter = q.correctLetters[i], !letter.isEmpty {
-                //     newScores[letter, default: 0] += 1
-                // }
             }
         }
-
         scores = newScores
     }
+    // MARK: - Singles-only checkpoint logic
 
-    // MARK: - Checkpoint (local only; no backend write)
-    private(set) var nextCheckpoint: Int = 10
-    var shouldShowCheckpoint: Bool {
-        answeredCount >= nextCheckpoint && currentIndex < questions.count
+    /// Should we ask the user now? (Only for SINGLE-kind answered count)
+    var shouldShowSinglesCheckpoint: Bool {
+        singleAnsweredCount >= nextSinglesCheckpoint && currentIndex < questions.count
     }
-    private func bumpCheckpointIfNeeded() {
-        while answeredCount >= nextCheckpoint { nextCheckpoint += 10 }
+
+    /// Call this when the user *continues* after seeing the prompt,
+    /// so we won't immediately re-prompt again.
+    func markSinglesCheckpointShown() {
+        while singleAnsweredCount >= nextSinglesCheckpoint {
+            nextSinglesCheckpoint += 10
+        }
     }
+
+    // MARK: - Local checkpoint persistence (resume later)
 
     private struct Snapshot: Codable {
         let currentIndex: Int
         let answers: [String: [Int]]   // String keys for JSON safety
         let scores: [String: Int]
-        let nextCheckpoint: Int
+        let nextSinglesCheckpoint: Int
     }
-    private let checkpointKey = "riasec_checkpoint_v1"
 
     func checkpointExists() -> Bool {
         UserDefaults.standard.data(forKey: checkpointKey) != nil
@@ -116,7 +129,7 @@ final class RiasecViewModel: ObservableObject {
             currentIndex: currentIndex,
             answers: Dictionary(uniqueKeysWithValues: answers.map { (String($0.key), $0.value) }),
             scores: scores,
-            nextCheckpoint: nextCheckpoint
+            nextSinglesCheckpoint: nextSinglesCheckpoint
         )
         if let data = try? JSONEncoder().encode(snap) {
             UserDefaults.standard.set(data, forKey: checkpointKey)
@@ -129,7 +142,7 @@ final class RiasecViewModel: ObservableObject {
         currentIndex = snap.currentIndex
         answers = Dictionary(uniqueKeysWithValues: snap.answers.compactMap { (Int($0.key) ?? -1, $0.value) }.filter { $0.0 >= 0 })
         scores = snap.scores
-        nextCheckpoint = snap.nextCheckpoint
+        nextSinglesCheckpoint = snap.nextSinglesCheckpoint
     }
 
     func clearCheckpoint() {
@@ -141,6 +154,6 @@ final class RiasecViewModel: ObservableObject {
         currentIndex = 0
         answers.removeAll()
         scores = ["R": 0,"I": 0,"A": 0,"S": 0,"E": 0,"C": 0]
-        nextCheckpoint = 10
+        nextSinglesCheckpoint = 10
     }
 }

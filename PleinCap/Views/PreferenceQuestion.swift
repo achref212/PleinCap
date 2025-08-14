@@ -1,11 +1,15 @@
 import SwiftUI
 
+// MARK: - Model
+
 struct PreferenceQuestion: Identifiable {
     let id = UUID()
     let title: String
     let question: String
     let options: [String]
 }
+
+// MARK: - View
 
 struct PreferenceQuestionsView: View {
     // Comes from the flow (e.g. from EstimatedBudgetView)
@@ -14,13 +18,14 @@ struct PreferenceQuestionsView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
     @EnvironmentObject private var authVM: AuthViewModel1
-    @State private var goToRiasec = false              // ← navigate to Riasec
+
+    // Nav -> RIASEC test
+    @State private var goToRiasec = false
 
     // UI state
     @State private var index = 0
     @State private var isSaving = false
     @State private var errorMessage: String? = nil
-    @State private var goToPerformance = false
 
     // Answers (one Int? per question)
     @State private var answers: [Int?]
@@ -30,7 +35,7 @@ struct PreferenceQuestionsView: View {
         _answers = State(initialValue: Array(repeating: nil, count: PreferenceQuestionsView.makeQuestions().count))
     }
 
-    // Exactly 8 questions, matching your screenshots
+    // 8 questions (matches your screenshots)
     static func makeQuestions() -> [PreferenceQuestion] {
         [
             PreferenceQuestion(
@@ -41,7 +46,6 @@ struct PreferenceQuestionsView: View {
                     "Courtes (3 ans ou moins)",
                     "Pas de préférence / Je ne sais pas encore"
                 ]),
-
             PreferenceQuestion(
                 title: "Apprentissage",
                 question: "Préférerais-tu apprendre à travers des choses…",
@@ -50,7 +54,6 @@ struct PreferenceQuestionsView: View {
                     "Abstraites (concepts, théories, débats)",
                     "Pas de préférence"
                 ]),
-
             PreferenceQuestion(
                 title: "Environnement",
                 question: "Préférerais-tu étudier dans un environnement plutôt…",
@@ -59,7 +62,6 @@ struct PreferenceQuestionsView: View {
                     "Théorique (cours, exposés, lectures…)",
                     "Peu importe"
                 ]),
-
             PreferenceQuestion(
                 title: "Formation",
                 question: "Tu serais plutôt attiré(e) par une formation…",
@@ -68,7 +70,6 @@ struct PreferenceQuestionsView: View {
                     "Hors apprentissage (= cours uniquement)",
                     "Peu importe"
                 ]),
-
             PreferenceQuestion(
                 title: "Établissements",
                 question: "As-tu une préférence pour les établissements publics ou privés ?",
@@ -77,7 +78,6 @@ struct PreferenceQuestionsView: View {
                     "Uniquement du privé",
                     "Je suis ouvert aux deux"
                 ]),
-
             PreferenceQuestion(
                 title: "Autonomie",
                 question: "Tu préférerais être accompagné(e) ou plutôt autonome dans ton apprentissage ?",
@@ -86,7 +86,6 @@ struct PreferenceQuestionsView: View {
                     "Autonome",
                     "Peu importe / Je ne sais pas encore"
                 ]),
-
             PreferenceQuestion(
                 title: "Confiance",
                 question: "À quel point serais-tu prêt(e) à relever un défi dans ta formation ?",
@@ -95,7 +94,6 @@ struct PreferenceQuestionsView: View {
                     "Je cherche quelque chose de pas trop difficile",
                     "Pas de préférence, du moment que j’aime ce que je fais"
                 ]),
-
             PreferenceQuestion(
                 title: "Projet métier",
                 question: "Tu préfères choisir un métier rapidement, ou te laisser encore quelques années pour réfléchir ?",
@@ -108,7 +106,6 @@ struct PreferenceQuestionsView: View {
     }
 
     private let questions = PreferenceQuestionsView.makeQuestions()
-
     private var current: PreferenceQuestion { questions[index] }
     private var isLast: Bool { index == questions.count - 1 }
     private var stepProgress: Double { Double(index) / Double(questions.count) }
@@ -130,26 +127,22 @@ struct PreferenceQuestionsView: View {
 
                 Spacer(minLength: 12)
 
-                // Local step progress (keeps your global bar style)
-                ProgressBarView(progress: .constant(max(0.30, stepProgress))) // keeps ≈30% look like your mock
+                ProgressBarView(progress: .constant(max(0.30, stepProgress)))
                     .frame(height: 18)
             }
             .padding([.horizontal, .top])
 
             ScrollView {
                 VStack(spacing: 20) {
-                    // Illustration (same look as your other steps)
                     Image("question_illustration")
                         .resizable()
                         .scaledToFit()
                         .frame(height: 180)
                         .accessibilityHidden(true)
 
-                    // Card
                     VStack(alignment: .leading, spacing: 16) {
                         TitleWithSideLineView(title: current.title, subtitle: current.question)
 
-                        // Choices
                         VStack(spacing: 14) {
                             ForEach(current.options.indices, id: \.self) { i in
                                 ChoiceRow(
@@ -161,7 +154,6 @@ struct PreferenceQuestionsView: View {
                             }
                         }
 
-                        // Context link only for Question 4 (apprentissage)
                         if index == 3 {
                             Button {
                                 if let url = URL(string: "https://www.service-public.fr/particuliers/vosdroits/F2918") {
@@ -177,7 +169,6 @@ struct PreferenceQuestionsView: View {
                             .padding(.top, 4)
                         }
 
-                        // Footer: counter
                         Text("Question \(index + 1)/\(questions.count)")
                             .font(.footnote)
                             .foregroundColor(.secondary)
@@ -202,7 +193,7 @@ struct PreferenceQuestionsView: View {
                 enabled: answers[index] != nil && !isSaving
             ) {
                 if isLast {
-                    Task { await saveAllAnswers() }
+                    Task { await saveAllAnswers() }   // ← saves to `preferences`
                 } else {
                     withAnimation(.easeInOut(duration: 0.2)) { index += 1 }
                 }
@@ -210,54 +201,90 @@ struct PreferenceQuestionsView: View {
             .padding(.horizontal)
             .padding(.vertical, 12)
 
-            // Hidden navigation to the next screen in your flow
+            // Hidden navigation
             NavigationLink(
-                           destination: RiasecTestView().environmentObject(authVM),
-                           isActive: $goToRiasec
-                       ) { EmptyView() }
-                       .hidden()
+                destination: RiasecTestView().environmentObject(authVM),
+                isActive: $goToRiasec
+            ) { EmptyView() }
+            .hidden()
         }
         .background(Color(UIColor.systemGroupedBackground).ignoresSafeArea())
         .navigationTitle("Définir mes préférences")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
-            // Keep your global progress moving a bit
             progress = max(progress, 0.35)
+            prefillIfAny()         // ← load from existing `preferences`
         }
         .alert(isPresented: .constant(errorMessage != nil)) {
             Alert(title: Text("Erreur"),
                   message: Text(errorMessage ?? ""),
-                  dismissButton: .default(Text("OK")) {
-                      errorMessage = nil
-                  })
+                  dismissButton: .default(Text("OK")) { errorMessage = nil })
+        }
+    }
+
+    // MARK: - Prefill from user (if present)
+
+    private func prefillIfAny() {
+        // Expecting shape:
+        // {
+        //   "version": 1,
+        //   "answers": [{ key, title, question, answer_index, answer_text }],
+        //   "raw": { "q1_etudes": 0, ... }
+        // }
+        guard
+            let prefDict = authVM.userProfile?.preferences?.value as? [String: Any],
+            let arr = prefDict["answers"] as? [[String: Any]]
+        else { return }
+
+        // arr is now [[String: Any]]
+
+        for (i, q) in questions.enumerated() {
+            if let found = arr.first(where: { ($0["key"] as? String) == stableKey(for: q, index: i) }),
+               let idx = found["answer_index"] as? Int,
+               q.options.indices.contains(idx) {
+                answers[i] = idx
+            }
         }
     }
 
     // MARK: - Save
 
     private func saveAllAnswers() async {
-        // Build a sanitized dictionary: one key per question
-        var quiz: [String: Any] = [:]
+        // Build ordered, stable array for readability on the backend
+        var answersArray: [[String: Any]] = []
+        var rawDict: [String: Int] = [:]
 
         for (i, q) in questions.enumerated() {
             guard let sel = answers[i], q.options.indices.contains(sel) else { continue }
-            let key = "q\(i+1)_\(q.title.sanitizedFR)"              // stable, ascii-ish key
-            quiz[key] = [
-                "question": q.question.sanitizedFR,
+            let key = stableKey(for: q, index: i)
+
+            answersArray.append([
+                "key": key,
+                "title": q.title,                     // keep display text
+                "question": q.question,
                 "answer_index": sel,
-                "answer_text": q.options[sel].sanitizedFR
-            ]
+                "answer_text": q.options[sel]
+            ])
+            rawDict[key] = sel
         }
+
+        let payload: [String: Any] = [
+            "preferences": [
+                "version": 1,
+                "answers": answersArray,
+                "raw": rawDict
+            ]
+        ]
 
         isSaving = true
         await withCheckedContinuation { cont in
-            authVM.updateUserFields(["preferences_quiz": quiz]) { result in
+            authVM.updateUserFields(payload) { result in
                 isSaving = false
                 switch result {
                 case .success:
                     withAnimation {
                         progress = max(progress, 0.40)
-                        goToRiasec = true          // ← go!
+                        goToRiasec = true
                     }
                 case .failure(let err):
                     errorMessage = err.localizedDescription
@@ -266,9 +293,14 @@ struct PreferenceQuestionsView: View {
             }
         }
     }
+
+    private func stableKey(for q: PreferenceQuestion, index: Int) -> String {
+        // q1_etudes, q2_apprentissage, ...
+        "q\(index + 1)_\(q.title.sanitizedFR)"
+    }
 }
 
-// MARK: - Choice row (rounded pill style)
+// MARK: - Choice row (rounded pill)
 
 private struct ChoiceRow: View {
     let title: String
@@ -315,8 +347,7 @@ private struct ChoiceRow: View {
     }
 }
 
-// MARK: - Preview (uses a fake PerformanceView so it compiles)
-
+// MARK: - Preview
 
 struct PreferenceQuestionsView_Previews: PreviewProvider {
     struct Wrapper: View {
@@ -330,9 +361,7 @@ struct PreferenceQuestionsView_Previews: PreviewProvider {
         }
     }
     static var previews: some View {
-        Wrapper()
-            .preferredColorScheme(.light)
-        Wrapper()
-            .preferredColorScheme(.dark)
+        Wrapper().preferredColorScheme(.light)
+        Wrapper().preferredColorScheme(.dark)
     }
 }

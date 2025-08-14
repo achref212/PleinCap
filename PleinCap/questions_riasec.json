@@ -73,7 +73,7 @@
     "text": "J'ai des aptitudes à comprendre les autres",
     "options": [
       "Assez bien",
-      "Pas mal",
+      "Un peu",
       "Pas vraiment",
       "Pas du tout"
     ],
@@ -87,7 +87,7 @@
   {
     "id": 6,
     "kind": "adjective",
-    "text": "Choisis 2 adjectifs qui te ressemblent le plus telle[le] que tu es et non pas telle[le] que tu voudrais être. Le répondant ne doit pas pouvoir sélectionner plus de 2 adjectifs.",
+    "text": "Choisis 2 adjectifs qui te ressemblent le plus tel(le) que tu es et non pas tel(le) que tu voudrais être. Le répondant ne doit pas pouvoir sélectionner plus de 2 adjectifs.",
     "options": [
       "adroit",
       "compréhensif",
@@ -188,28 +188,28 @@
   {
     "id": 11,
     "kind": "single",
-    "text": "Indiquer l'activité qui te plairait le plus",
+    "text": "Indique l'activité qui te plairait le plus",
     "options": [
       "lire, étudier, et réfléchir à la résolution de problèmes",
-      "prendre des décisions éclairées sur des décisions d'entreprises",
+      "tenir à jour des dossiers et saisir au clavier des informations",
       "exercer une fonction de manager (diriger une équipe)",
-      "enseigner, aider le secteur autour",
-      "travailler dans une mairie, à l'école (écrits, appareil, matériel)",
+      "enseigner, aider ou secourir autrui",
+      "travailler de ses mains, à l'aide d'outils, d'appareils, de matériel",
       "exercer ses talents artistiques"
     ],
     "correctLetters": [
       "I",
-      "E",
+      "C",
       "E",
       "S",
-      "C",
+      "R",
       "A"
     ]
   },
   {
     "id": 12,
     "kind": "choice",
-    "text": "Indique le domaine dans lequel tu te sens le moins compétent en cochant la ligne dans la colonne -",
+    "text": "Indique le domaine dans lequel tu te sens le moins compétent (colonne -)",
     "options": [
       "commerce",
       "domaine créatif (publicité, graphisme, décoration)",
@@ -230,7 +230,7 @@
   {
     "id": 13,
     "kind": "choice",
-    "text": "Indique le domaine dans lequel tu te sens le plus capable en cochant la ligne dans la colonne +",
+    "text": "Indique le domaine dans lequel tu te sens le plus capable (colonne +)",
     "options": [
       "commerce",
       "domaine créatif (publicité, graphisme, décoration)",
@@ -246,6 +246,822 @@
       "E",
       "S",
       "R"
+    ]
+  },
+  {
+    "id": 14,
+    "kind": "single",
+    "text": "J'aime suivre des règles et des directives",
+    "options": [
+      "Assez bien",
+      "Un peu",
+      "Pas vraiment",
+      "Pas du tout"
+    ],
+    "correctLetters": [
+      "C",
+      "C",
+      "",
+      ""
+    ]
+  },
+  {
+    "id": 15,
+    "kind": "single",
+    "text": "J'ai des aptitudes à coopérer avec les autres",
+    "options": [
+      "Assez bien",
+      "Un peu",
+      "Pas vraiment",
+      "Pas du tout"
+    ],
+    "correctLetters": [
+      "S",
+      "S",
+      "",
+      ""
+    ]
+  },
+  {
+    "id": 16,
+    "kind": "single",
+    "text": "J'ai des capacités d'expression (écrite, corporelle)",
+    "options": [
+      "Assez bien",
+      "Un peu",
+      "Pas vraiment",
+      "Pas du tout"
+    ],
+    "correctLetters": [
+      "A",
+      "A",
+      "",
+      ""
+    ]
+  },
+  {
+    "id": 17,
+    "kind": "single",
+    "text": "J'ai des aptitudes scientifiques",
+    "options": [
+      "Assez bien",
+      "Un peu",
+      "Pas vraiment",
+      "Pas du tout"
+    ],
+    "correctLetters": [
+      "I",
+      "I",
+      "",
+      ""
+    ]
+  },
+  {
+    "id": 18,
+    "kind": "single",
+    "text": "J'ai des aptitudes à travailler avec ordre, soin et méthode",
+    "options": [
+      "Assez bien",
+      "Un peu",
+      "Pas vraiment",
+      "Pas du tout"
+    ],
+    "correctLetters": [
+      "C",
+      "C",
+      "",
+      ""
+    ]
+  },
+  {
+    "id": 19,
+    "kind": "adjective",
+    "text": "Choisis 2 adjectifs qui te ressemblent le plus tel(le) que tu es et non pas tel(le) que tu voudrais être. Le répondant ne doit pas pouvoir sélectionner plus de 2 adjectifs.",
+    "options": [
+      "méthodique",
+      "précis",
+      "intelligent",
+      "autoritaire",
+      "sociable",
+      "logique",
+      "énergique",
+      "imaginatif",
+      "rapide",
+      "sincère",
+      "individualiste",
+      "poli"
+    ],
+    "correctLetters": [
+      "R",
+      "C",
+      "I",
+      "E",
+      "S",
+      "I",
+      "E",
+      "A",
+      "R",
+      "S",
+      "A",
+      "C"
+    ]
+  },
+  {
+    "id": 20,
+    "kind": "single",
+    "text": "Devenir une référence dans mon domaine",
+    "options": [
+      "Essentiel",
+      "Très important",
+      "Assez important",
+      "Peu important"
+    ],
+    "correctLetters": [
+      "I",
+      "I",
+      "",
+      ""
+    ]
+  },
+  {
+    "id": 21,
+    "kind": "single",
+    "text": "Devenir un athlète hors pair",
+    "options": [
+      "Essentiel",
+      "Très important",
+      "Assez important",
+      "Peu important"
+    ],
+    "correctLetters": [
+      "R",
+      "R",
+      "",
+      ""
+    ]
+  },
+  {
+    "id": 22,
+    "kind": "single",
+    "text": "Assumer un rôle dirigeant dans la société",
+    "options": [
+      "Essentiel",
+      "Très important",
+      "Assez important",
+      "Peu important"
+    ],
+    "correctLetters": [
+      "E",
+      "E",
+      "",
+      ""
+    ]
+  },
+  {
+    "id": 23,
+    "kind": "single",
+    "text": "Avoir une grande culture générale",
+    "options": [
+      "Essentiel",
+      "Très important",
+      "Assez important",
+      "Peu important"
+    ],
+    "correctLetters": [
+      "",
+      "",
+      "R",
+      "R"
+    ]
+  },
+  {
+    "id": 24,
+    "kind": "choice",
+    "text": "Indique le loisir qui te plaît le moins (colonne --)",
+    "options": [
+      "Pratiquer l'athlétisme",
+      "Créer une start'up",
+      "Faire une collection",
+      "Dessiner, jouer d'un instrument de musique, danser",
+      "Animer un mercredi récréatif avec de jeunes enfants",
+      "Participer aux activités d'un club d'astronomie"
+    ],
+    "correctLetters": [
+      "S",
+      "I",
+      "A",
+      "C",
+      "R",
+      "E"
+    ]
+  },
+  {
+    "id": 25,
+    "kind": "choice",
+    "text": "Indique le loisir qui te plaît le plus (colonne ++)",
+    "options": [
+      "Pratiquer l'athlétisme",
+      "Créer une start'up",
+      "Faire une collection",
+      "Dessiner, jouer d'un instrument de musique, danser",
+      "Animer un mercredi récréatif avec de jeunes enfants",
+      "Participer aux activités d'un club d'astronomie"
+    ],
+    "correctLetters": [
+      "R",
+      "E",
+      "C",
+      "A",
+      "S",
+      "I"
+    ]
+  },
+  {
+    "id": 26,
+    "kind": "single",
+    "text": "J'ai des aptitudes à diriger les autres",
+    "options": [
+      "Assez bien",
+      "Un peu",
+      "Pas vraiment",
+      "Pas du tout"
+    ],
+    "correctLetters": [
+      "E",
+      "E",
+      "",
+      ""
+    ]
+  },
+  {
+    "id": 27,
+    "kind": "single",
+    "text": "J'ai tendance à aider autrui",
+    "options": [
+      "Assez bien",
+      "Un peu",
+      "Pas vraiment",
+      "Pas du tout"
+    ],
+    "correctLetters": [
+      "S",
+      "S",
+      "",
+      ""
+    ]
+  },
+  {
+    "id": 28,
+    "kind": "single",
+    "text": "J'ai des aptitudes aux mathématiques",
+    "options": [
+      "Assez bien",
+      "Un peu",
+      "Pas vraiment",
+      "Pas du tout"
+    ],
+    "correctLetters": [
+      "I",
+      "I",
+      "",
+      ""
+    ]
+  },
+  {
+    "id": 29,
+    "kind": "single",
+    "text": "J'ai confiance en moi",
+    "options": [
+      "Assez bien",
+      "Un peu",
+      "Pas vraiment",
+      "Pas du tout"
+    ],
+    "correctLetters": [
+      "E",
+      "E",
+      "",
+      ""
+    ]
+  },
+  {
+    "id": 30,
+    "kind": "adjective",
+    "text": "Choisis 2 adjectifs qui te ressemblent le plus tel(le) que tu es et non pas tel(le) que tu voudrais être. Le répondant ne doit pas pouvoir sélectionner plus de 2 adjectifs.",
+    "options": [
+      "réfléchi",
+      "original",
+      "vaillant",
+      "volontaire",
+      "travailleur",
+      "rêveur",
+      "persévérant",
+      "vigoureux",
+      "coopératif",
+      "responsable",
+      "secourable",
+      "sérieux"
+    ],
+    "correctLetters": [
+      "I",
+      "A",
+      "R",
+      "E",
+      "C",
+      "A",
+      "I",
+      "R",
+      "S",
+      "E",
+      "S",
+      "C"
+    ]
+  },
+  {
+    "id": 31,
+    "kind": "single",
+    "text": "Être influent dans la société",
+    "options": [
+      "Essentiel",
+      "Très important",
+      "Assez important",
+      "Peu important"
+    ],
+    "correctLetters": [
+      "E",
+      "E",
+      "",
+      ""
+    ]
+  },
+  {
+    "id": 32,
+    "kind": "single",
+    "text": "Respecter strictement des règles",
+    "options": [
+      "Essentiel",
+      "Très important",
+      "Assez important",
+      "Peu important"
+    ],
+    "correctLetters": [
+      "C",
+      "C",
+      "",
+      ""
+    ]
+  },
+  {
+    "id": 33,
+    "kind": "single",
+    "text": "Apporter ma contribution théorique à la science",
+    "options": [
+      "Essentiel",
+      "Très important",
+      "Assez important",
+      "Peu important"
+    ],
+    "correctLetters": [
+      "I",
+      "I",
+      "",
+      ""
+    ]
+  },
+  {
+    "id": 34,
+    "kind": "single",
+    "text": "Être capable d'écrire de la bonne littérature (romans, nouvelles, poèmes, etc.)",
+    "options": [
+      "Essentiel",
+      "Très important",
+      "Assez important",
+      "Peu important"
+    ],
+    "correctLetters": [
+      "A",
+      "A",
+      "",
+      ""
+    ]
+  },
+  {
+    "id": 35,
+    "kind": "single",
+    "text": "Devenir un chef d'entreprise",
+    "options": [
+      "Essentiel",
+      "Très important",
+      "Assez important",
+      "Peu important"
+    ],
+    "correctLetters": [
+      "E",
+      "E",
+      "",
+      ""
+    ]
+  },
+  {
+    "id": 36,
+    "kind": "choice",
+    "text": "Indique l'activité qui te déplaît le plus (colonne --)",
+    "options": [
+      "faire du business pour gagner de l'argent",
+      "animer des activités avec de jeunes enfants",
+      "fabriquer des objets",
+      "dessiner des logos pour des marques",
+      "tenir la comptabilité d'un petit commerce",
+      "faire du travail de recherche scientifique"
+    ],
+    "correctLetters": [
+      "I",
+      "R",
+      "S",
+      "C",
+      "A",
+      "E"
+    ]
+  },
+  {
+    "id": 37,
+    "kind": "choice",
+    "text": "Indique l'activité qui te plaît le plus (colonne ++)",
+    "options": [
+      "faire du business pour gagner de l'argent",
+      "animer des activités avec de jeunes enfants",
+      "fabriquer des objets",
+      "dessiner des logos pour des marques",
+      "tenir la comptabilité d'un petit commerce",
+      "faire du travail de recherche scientifique"
+    ],
+    "correctLetters": [
+      "E",
+      "S",
+      "R",
+      "A",
+      "C",
+      "I"
+    ]
+  },
+  {
+    "id": 38,
+    "kind": "single",
+    "text": "J'ai des aptitudes au bricolage",
+    "options": [
+      "Assez bien",
+      "Un peu",
+      "Pas vraiment",
+      "Pas du tout"
+    ],
+    "correctLetters": [
+      "R",
+      "R",
+      "",
+      ""
+    ]
+  },
+  {
+    "id": 39,
+    "kind": "single",
+    "text": "J'ai des aptitudes à la créativité (trouver des solutions originales)",
+    "options": [
+      "Assez bien",
+      "Un peu",
+      "Pas vraiment",
+      "Pas du tout"
+    ],
+    "correctLetters": [
+      "A",
+      "A",
+      "",
+      ""
+    ]
+  },
+  {
+    "id": 40,
+    "kind": "single",
+    "text": "Je suis un meneur de groupe",
+    "options": [
+      "Assez bien",
+      "Un peu",
+      "Pas vraiment",
+      "Pas du tout"
+    ],
+    "correctLetters": [
+      "E",
+      "E",
+      "",
+      ""
+    ]
+  },
+  {
+    "id": 41,
+    "kind": "single",
+    "text": "J'ai des aptitudes à me comprendre",
+    "options": [
+      "Assez bien",
+      "Un peu",
+      "Pas vraiment",
+      "Pas du tout"
+    ],
+    "correctLetters": [
+      "",
+      "",
+      "R",
+      "R"
+    ]
+  },
+  {
+    "id": 42,
+    "kind": "choice",
+    "text": "Indique la catégorie de personnes la moins sympathique (colonne --)",
+    "options": [
+      "les bricoleurs",
+      "ceux qui suivent les règles",
+      "ceux qui ne suivent pas les règles",
+      "ceux qui parlent peu",
+      "ceux qui ont le contact facile",
+      "ceux qui prennent le commandement"
+    ],
+    "correctLetters": [
+      "S",
+      "A",
+      "C",
+      "E",
+      "R",
+      "I"
+    ]
+  },
+  {
+    "id": 43,
+    "kind": "choice",
+    "text": "Indique la catégorie de personnes la plus sympathique (colonne ++)",
+    "options": [
+      "les bricoleurs",
+      "ceux qui suivent les règles",
+      "ceux qui ne suivent pas les règles",
+      "ceux qui parlent peu",
+      "ceux qui ont le contact facile",
+      "ceux qui prennent le commandement"
+    ],
+    "correctLetters": [
+      "R",
+      "C",
+      "A",
+      "I",
+      "S",
+      "E"
+    ]
+  },
+  {
+    "id": 44,
+    "kind": "single",
+    "text": "Abattre beaucoup de travail",
+    "options": [
+      "Essentiel",
+      "Très important",
+      "Assez important",
+      "Peu important"
+    ],
+    "correctLetters": [
+      "C",
+      "C",
+      "",
+      ""
+    ]
+  },
+  {
+    "id": 45,
+    "kind": "single",
+    "text": "Contribuer au bien-être de l'humanité",
+    "options": [
+      "Essentiel",
+      "Très important",
+      "Assez important",
+      "Peu important"
+    ],
+    "correctLetters": [
+      "S",
+      "S",
+      "",
+      ""
+    ]
+  },
+  {
+    "id": 46,
+    "kind": "single",
+    "text": "Réaliser une belle oeuvre d'art (peintre, sculpture, décoration, etc.)",
+    "options": [
+      "Essentiel",
+      "Très important",
+      "Assez important",
+      "Peu important"
+    ],
+    "correctLetters": [
+      "A",
+      "A",
+      "A",
+      ""
+    ]
+  },
+  {
+    "id": 47,
+    "kind": "single",
+    "text": "Devenir un musicien accompli (soliste ou compositeur)",
+    "options": [
+      "Essentiel",
+      "Très important",
+      "Assez important",
+      "Peu important"
+    ],
+    "correctLetters": [
+      "A",
+      "A",
+      "",
+      ""
+    ]
+  },
+  {
+    "id": 48,
+    "kind": "single",
+    "text": "Avoir beaucoup d'amis",
+    "options": [
+      "Essentiel",
+      "Très important",
+      "Assez important",
+      "Peu important"
+    ],
+    "correctLetters": [
+      "S",
+      "S",
+      "",
+      ""
+    ]
+  },
+  {
+    "id": 49,
+    "kind": "single",
+    "text": "Parmi les 12 personnalités suivantes, indique celle dont l'exemple te stimulerait le plus",
+    "options": [
+      "Maria Montessori (Enseignante et auteur de la pédagogie Montessori)",
+      "Daniel Baal (dirigeant de banque)",
+      "Dominique Chapatte (expert en mécanique automobile - turbo)",
+      "Xavier Niel (Business man dans la French Tech)",
+      "Marie Curie (chercheuse scientifique)",
+      "André Michelin (inventeur du pneu radial)",
+      "Antoine de St Exupery (écrivain, peintre)",
+      "Michel-Edouard Leclerc (Dirigeant, Président des supermarchés Leclerc)",
+      "Banksy (Street artiste mondialement reconnu)",
+      "Christine Lagarde (Banquière – elle incarne la rigueur et l’organisation)",
+      "Michel Cymes (médecin)",
+      "Cédric Villani (Prix Nobel de Mathématique)"
+    ],
+    "correctLetters": [
+      "S",
+      "C",
+      "R",
+      "E",
+      "I",
+      "R",
+      "A",
+      "E",
+      "A",
+      "C",
+      "S",
+      "I"
+    ]
+  },
+  {
+    "id": 50,
+    "kind": "single",
+    "text": "J'ai déjà été ou je suis délégué de classe et j'aime ça",
+    "options": [
+      "OUI, souvent",
+      "OUI, occasionnellement",
+      "NON"
+    ],
+    "correctLetters": [
+      "E",
+      "E",
+      ""
+    ]
+  },
+  {
+    "id": 51,
+    "kind": "single",
+    "text": "J'ai déjà obtenu des mentions ou des prix à l'école",
+    "options": [
+      "OUI, souvent",
+      "OUI, occasionnellement",
+      "NON"
+    ],
+    "correctLetters": [
+      "I",
+      "I",
+      ""
+    ]
+  },
+  {
+    "id": 52,
+    "kind": "single",
+    "text": "J'ai déjà eu l'occasion d'organiser, planifier, rédiger des documents administratifs et j'aime ça",
+    "options": [
+      "OUI, souvent",
+      "OUI, occasionnellement",
+      "NON"
+    ],
+    "correctLetters": [
+      "C",
+      "C",
+      ""
+    ]
+  },
+  {
+    "id": 53,
+    "kind": "single",
+    "text": "J'ai déjà gardé un bébé et/ou aidé des personnes âgées et/ou accueilli et informé des participants à une manifestation et j'aime ça",
+    "options": [
+      "OUI, souvent",
+      "OUI, occasionnellement",
+      "NON"
+    ],
+    "correctLetters": [
+      "S",
+      "S",
+      ""
+    ]
+  },
+  {
+    "id": 54,
+    "kind": "single",
+    "text": "J'ai déjà obtenu des médailles et/ou de bons classements lors de compétitions sportives",
+    "options": [
+      "OUI, souvent",
+      "OUI, occasionnellement",
+      "NON"
+    ],
+    "correctLetters": [
+      "R",
+      "R",
+      ""
+    ]
+  },
+  {
+    "id": 55,
+    "kind": "single",
+    "text": "On m'a déjà dit que j'avais des 'talents' artistiques, littéraires ou musicaux.",
+    "options": [
+      "OUI, souvent",
+      "OUI, occasionnellement",
+      "NON"
+    ],
+    "correctLetters": [
+      "A",
+      "A",
+      ""
+    ]
+  },
+  {
+    "id": 56,
+    "kind": "choice",
+    "text": "Indique la matière que tu aimes le moins (colonne --)",
+    "options": [
+      "La comptabilité – la gestion",
+      "La Physique – la chimie",
+      "Les travaux manuels - la technologie",
+      "Le commerce - les affaires",
+      "Le social - la santé - le secourisme",
+      "Les arts plastiques - la musique"
+    ],
+    "correctLetters": [
+      "A",
+      "E",
+      "S",
+      "I",
+      "R",
+      "C"
+    ]
+  },
+  {
+    "id": 57,
+    "kind": "choice",
+    "text": "Indique la matière que tu préfères le plus (colonne ++)",
+    "options": [
+      "La comptabilité – la gestion",
+      "La Physique – la chimie",
+      "Les travaux manuels - la technologie",
+      "Le commerce - les affaires",
+      "Le social - la santé - le secourisme",
+      "Les arts plastiques - la musique"
+    ],
+    "correctLetters": [
+      "C",
+      "I",
+      "R",
+      "E",
+      "S",
+      "A"
     ]
   }
 ]

@@ -57,7 +57,18 @@ struct TextualScaleQuestionView: View {
 #Preview {
     TextualScaleQuestionView(
         questionText: "J'ai tendance à être distrait",
-        options: ["Assez bien", "Un peu", "Pas vraiment", "Pas du tout"]
+        options: ["Maria Montessori (Enseignante et auteur de la pédagogie Montessori)",
+                  "Daniel Baal (dirigeant de banque)",
+                  "Dominique Chapatte (expert en mécanique automobile - turbo)",
+                  "Xavier Niel (Business man dans la French Tech)",
+                  "Marie Curie (chercheuse scientifique)",
+                  "André Michelin (inventeur du pneu radial)",
+                  "Antoine de St Exupery (écrivain, peintre)",
+                  "Michel-Edouard Leclerc (Dirigeant, Président des supermarchés Leclerc)",
+                  "Banksy (Street artiste mondialement reconnu)",
+                  "Christine Lagarde (Banquière – elle incarne la rigueur et l’organisation)",
+                  "Michel Cymes (médecin)",
+                  "Cédric Villani (Prix Nobel de Mathématique)"]
     ) { selectedIndex in
         print("Selected: \(selectedIndex)")
     }

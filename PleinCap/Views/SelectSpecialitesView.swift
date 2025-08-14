@@ -5,7 +5,7 @@ struct SelectSpecialitesView: View {
     @EnvironmentObject var authVM: AuthViewModel1
 
     @Binding var progress: Double
-    @State private var selectedSpecialites: Set<String> = []   // DISPLAY strings (accented)
+    @State private var selectedSpecialites: Set<String> = []   // DISPLAY strings
     @State private var goToNext = false
     @State private var isSaving = false
 
@@ -14,17 +14,13 @@ struct SelectSpecialitesView: View {
     let filiere: String          // e.g. "STMG", "STI2D", ... or "" for Générale
     let preselectedDefaults: [String]   // DISPLAY defaults from previous step
 
-    // ✅ Fixed: compare to lowercase "terminale"
     private var isTerminale: Bool {
         niveau.folding(options: [.diacriticInsensitive], locale: .init(identifier: "fr_FR"))
             .lowercased() == "terminale"
     }
 
+    // Allowed per section (Première: 3, Terminale: 2) unless a section is 1-by-design
     private var maxSelectionDefault: Int { isTerminale ? 2 : 3 }
-
-    private var defaultSetSanitized: Set<String> {
-        Set(preselectedDefaults.map { $0.sanitizedFR })
-    }
 
     // MARK: - Grouped options (DISPLAY)
     private var groupedSpecialites: [String: [String]] {
@@ -65,17 +61,11 @@ struct SelectSpecialitesView: View {
             }
 
         case "STAV":
-            if isTerminale {
-                return ["Territoires et technologie (Terminale)": [
-                    "Aménagement", "Production", "Agroéquipement", "Services", "Transformation",
-                    "Gestion des ressources et de l'alimentation", "Territoires et sociétés"
-                ]]
-            } else {
-                return ["Technologie STAV (Première)": [
-                    "Aménagement", "Production", "Agroéquipement", "Services", "Transformation",
-                    "Gestion des ressources et de l'alimentation", "Territoires et sociétés"
-                ]]
-            }
+            let items = [
+                "Aménagement", "Production", "Agroéquipement", "Services", "Transformation",
+                "Gestion des ressources et de l'alimentation", "Territoires et sociétés"
+            ]
+            return [isTerminale ? "Territoires et technologie (Terminale)" : "Technologie STAV (Première)": items]
 
         case "STI2D":
             if isTerminale {
@@ -139,17 +129,13 @@ struct SelectSpecialitesView: View {
         }
     }
 
-    private func isDefault(_ optionDisplay: String) -> Bool {
-        defaultSetSanitized.contains(optionDisplay.sanitizedFR)
-    }
-
-    private var maxSelectionPerSectionBase: [String: Int] {
+    /// Per-section maximum
+    private var maxSelectionPerSection: [String: Int] {
         var config: [String: Int] = [:]
         for key in groupedSpecialites.keys {
             switch key {
-            case "Culture et sciences", "Pratique artistique":
-                config[key] = 1
-            case "Spécialité STMG Terminale",
+            case "Culture et sciences", "Pratique artistique",
+                 "Spécialité STMG Terminale",
                  "Spécialité STMG Première",
                  "Spécialité STI2D",
                  "Technologie STAV (Première)",
@@ -163,30 +149,12 @@ struct SelectSpecialitesView: View {
         return config
     }
 
-    private func effectiveMax(for section: String) -> Int {
-        let base = maxSelectionPerSectionBase[section] ?? maxSelectionDefault
-        let defaultsCount = (groupedSpecialites[section] ?? []).filter { isDefault($0) }.count
-        return max(0, base - defaultsCount)
-    }
-
-    private var visibleSections: [(title: String, options: [String], max: Int)] {
-        Array(groupedSpecialites.keys)
-            .sorted()
-            .compactMap { key in
-                let all = groupedSpecialites[key] ?? []
-                let remaining = all.filter { !isDefault($0) }
-                let limit = effectiveMax(for: key)
-                return (remaining.isEmpty || limit == 0) ? nil : (key, remaining, limit)
-            }
-    }
-
+    /// Valid if each section has 1…max selections
     private func isValidSelection() -> Bool {
-        for (section, options, _) in visibleSections {
-            let baseMax = maxSelectionPerSectionBase[section] ?? maxSelectionDefault
-            let defaultsCount = (groupedSpecialites[section] ?? []).filter { isDefault($0) }.count
-            let picksCount = options.filter { selectedSpecialites.contains($0) }.count
-            let combined = defaultsCount + picksCount
-            if combined < 1 || combined > baseMax { return false }
+        for (section, options) in groupedSpecialites {
+            let maxAllowed = maxSelectionPerSection[section] ?? maxSelectionDefault
+            let picks = selectedSpecialites.intersection(Set(options))
+            if picks.count < 1 || picks.count > maxAllowed { return false }
         }
         return true
     }
@@ -195,19 +163,17 @@ struct SelectSpecialitesView: View {
         VStack(spacing: 0) {
             ScrollView {
                 VStack(spacing: 24) {
-                    ProgressBarView(progress: $progress)
-                        .padding(.top)
-
+                    ProgressBarView(progress: $progress).padding(.top)
                     ImageWithCaptionView(imageName: "Specialite", caption: "Spécialités")
-
                     header
 
                     VStack(spacing: 16) {
-                        ForEach(visibleSections, id: \.title) { section in
+                        ForEach(groupedSpecialites.keys.sorted(), id: \.self) { section in
+                            let options = groupedSpecialites[section] ?? []
                             AccordionCheckboxSectionView(
-                                title: section.title,
-                                options: section.options,
-                                maxSelection: section.max,
+                                title: section,
+                                options: options,
+                                maxSelection: maxSelectionPerSection[section] ?? maxSelectionDefault,
                                 selectedItems: $selectedSpecialites
                             )
                         }
@@ -219,17 +185,15 @@ struct SelectSpecialitesView: View {
 
             VStack {
                 PrimaryGradientButton(
-                    title: isSaving ? "Enregistrement..." : (visibleSections.isEmpty ? "Continuer" : "Suivant"),
-                    enabled: (visibleSections.isEmpty || isValidSelection()) && !isSaving
+                    title: isSaving ? "Enregistrement..." : "Suivant",
+                    enabled: isValidSelection() && !isSaving
                 ) { saveAndNavigate() }
                 .padding(.horizontal)
 
                 NavigationLink(
-                    destination: SelectAcademieView(progress: $progress)
-                        .environmentObject(authVM),
+                    destination: SelectAcademieView(progress: $progress).environmentObject(authVM),
                     isActive: $goToNext
-                ) { EmptyView() }
-                .hidden()
+                ) { EmptyView() }.hidden()
             }
             .padding(.bottom, 16)
             .background(Color(UIColor.systemGroupedBackground))
@@ -238,28 +202,21 @@ struct SelectSpecialitesView: View {
         .navigationTitle("Choix des spécialités")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
-            // Rebuild user selection from backend (sanitized) into DISPLAY strings,
-            // then remove defaults from the initial selection.
+            // Start with defaults pre-selected
+            var start = Set(preselectedDefaults)
+
+            // Merge with any already saved (convert sanitized -> DISPLAY if present in our lists)
             let savedSanitized = Set((authVM.specialites ?? []).map { $0.sanitizedFR })
             let allDisplay = groupedSpecialites.values.flatMap { $0 }
             let savedDisplay = allDisplay.filter { savedSanitized.contains($0.sanitizedFR) }
-            selectedSpecialites = Set(savedDisplay.filter { !isDefault($0) })
+            start.formUnion(savedDisplay)
+
+            selectedSpecialites = start
 
             progress = max(progress, 0.6)
-
-            if visibleSections.isEmpty {
-                DispatchQueue.main.async {
-                    withAnimation {
-                        progress = max(progress, 0.7)
-                        goToNext = true
-                    }
-                }
-            }
         }
         .alert(item: $authVM.errorMessage) { err in
-            Alert(title: Text("Erreur"),
-                  message: Text(err.message),
-                  dismissButton: .default(Text("OK")))
+            Alert(title: Text("Erreur"), message: Text(err.message), dismissButton: .default(Text("OK")))
         }
     }
 
@@ -267,12 +224,10 @@ struct SelectSpecialitesView: View {
         HStack(alignment: .top, spacing: 8) {
             Rectangle().fill(Color.orange).frame(width: 4).cornerRadius(2)
             VStack(alignment: .leading, spacing: 4) {
-                Text("Choisis tes spécialités")
+                Text("Choisis/valide tes spécialités")
                     .font(dynamicTypeSize.isAccessibilitySize ? .title3.bold() : .title3.bold())
                     .foregroundColor(Color(hex: "#2C4364"))
-                Text(visibleSections.isEmpty
-                     ? "Tes spécialités par défaut couvrent déjà ce qu’il faut."
-                     : "Fais au moins un choix par groupe (jusqu’à \(maxSelectionDefault) pour certains).")
+                Text("Les spécialités par défaut sont pré-cochées. Tu peux les modifier dans la limite autorisée par groupe.")
                     .font(dynamicTypeSize.isAccessibilitySize ? .body : .subheadline)
                     .foregroundColor(.secondary)
             }
@@ -285,15 +240,13 @@ struct SelectSpecialitesView: View {
 
     private func saveAndNavigate() {
         isSaving = true
-        let combinedSanitized = Array(
-            defaultSetSanitized.union(selectedSpecialites.map { $0.sanitizedFR })
-        ).sorted()
+        let sanitized = selectedSpecialites.map { $0.sanitizedFR }.sorted()
 
-        authVM.updateUserFields(["specialites": combinedSanitized]) { result in
+        authVM.updateUserFields(["specialites": sanitized]) { result in
             isSaving = false
             switch result {
             case .success:
-                authVM.specialites = combinedSanitized
+                authVM.specialites = sanitized
                 withAnimation {
                     progress = max(progress, 0.7)
                     goToNext = true
